@@ -5,7 +5,7 @@ CI/CD (PR #6, merged) and Arko's open items (PR #7, open). Owners follow the dir
 [plans/README.md](plans/README.md): **Shads** = `web/**`, **Hrittika** = data/model, **Arko** = `src/rules`,
 `src/api`, `api/`, `supabase/`, `README.md`, `Makefile`, `vercel.json`, deploy.
 
-Status key: **OPEN** · **DONE** (merged to `main`) · **PR #7** (fixed, waiting for review and merge).
+Status key: **OPEN** · **DONE** (merged to `main`) · **PR #7** / **PR #8** (fixed, waiting for review and merge).
 
 ## 1. What passed
 
@@ -30,13 +30,13 @@ Status key: **OPEN** · **DONE** (merged to `main`) · **PR #7** (fixed, waiting
 | --- | --- | --- | --- | --- | --- |
 | 1 | **Arko** (Task 5, deploy) | **DONE** (Hrittika, D37, PR #6) | The live Vercel site was the hour-0 placeholder. | Home page said "Operator console placeholder"; `/seed.json` and `/api/batches` returned 404. | Fresh Vercel project `whyquiet` at https://whyquiet.vercel.app. |
 | 1b | **Arko** (Tasks 3 and 5) | **DONE** (Hrittika, D37, PR #6) | The batches migration was never applied and the demo accounts never created, though STATE.md and README said so. | `GET /api/batches` returned 500 "Could not find the table 'public.batch_summaries'". The UI hid it behind "write path offline". | Fresh Supabase project `grflsfhkcatoxpjeszxh` with both migrations and both demo accounts. |
-| 2 | **Shads** (Task 4) | OPEN | Sign-in is fake. `handleLoginSubmit` in `web/src/App.tsx` never calls `login()` from `api.ts`. It waits 400 ms and saves the role button you clicked. | Signed in as approver with password `••••••••`; no request to `/api/auth/login`. No token is stored, so every write call gets 401. | Call `login(email, password)` from `api.ts`, use the role the server returns, show the error `detail` on failure. |
-| 3 | **Shads** (Task 4) | OPEN | The Batches page hides every API failure and pretends it worked. `proposeBatch`, `decideBatch` and `exportBatch` each sit in a `catch {}` that builds a fake local result (`web/src/Batches.tsx`). | "Batch BATCH-4821 successfully proposed!" appears although the API returned 401. Real 409 and 403 errors never reach the screen. | Fall back only on 503 (write path offline); otherwise show `err.message`. |
+| 2 | **Shads** (Task 4) | **PR #8** (Hrittika, D41) | Sign-in is fake. `handleLoginSubmit` in `web/src/App.tsx` never calls `login()` from `api.ts`. It waits 400 ms and saves the role button you clicked. | Signed in as approver with password `••••••••`; no request to `/api/auth/login`. No token is stored, so every write call gets 401. | Call `login(email, password)` from `api.ts`, use the role the server returns, show the error `detail` on failure. |
+| 3 | **Shads** (Task 4) | OPEN (**now urgent**: since PR #8 sign-in is real, so proposals and approvals write to the production database, while a 409 or 403 still looks like success) | The Batches page hides every API failure and pretends it worked. `proposeBatch`, `decideBatch` and `exportBatch` each sit in a `catch {}` that builds a fake local result (`web/src/Batches.tsx`). | "Batch BATCH-4821 successfully proposed!" appears although the API returned 401. Real 409 and 403 errors never reach the screen. | Fall back only on 503 (write path offline); otherwise show `err.message`. |
 | 4 | **Shads** | OPEN | Exported campaign file can contain the wrong wallets. The export fallback fills `wallet_ids` from the cause in the dropdown, not the batch's cause. | Select "Fee Shock", then download an approved Job Exit batch: the file lists Fee Shock wallets. | Remove the fallback or filter by `batch.cause`. |
-| 5 | **Shads** | OPEN | Self-approval guard never fires on real batches. UI compares `user.email === b.proposed_by`, but the API returns a user UUID. | Works only on the hard-coded sample batches. | Store `user_id` from the login response (after #2) and compare `user.user_id === b.proposed_by`. |
-| 6 | **Shads** | OPEN | Fake sample batches are shown as if real when the batch list is empty. | IDs like `BATCH-8910` are not UUIDs (approve returns 422); codes like `REM-JOB-01` fail the DB check `^[a-z][a-z0-9_]{1,63}$`. | Show an empty state; use sample batches only in offline (503) mode, labelled as sample. |
+| 5 | **Shads** | **PR #8** (Hrittika, D41) | Self-approval guard never fires on real batches. UI compares `user.email === b.proposed_by`, but the API returns a user UUID. | Works only on the hard-coded sample batches. | Store `user_id` from the login response (after #2) and compare `user.user_id === b.proposed_by`. |
+| 6 | **Shads** | **PR #8** (Hrittika, D41) | Fake sample batches are shown as if real when the batch list is empty. | IDs like `BATCH-8910` are not UUIDs (approve returns 422); codes like `REM-JOB-01` fail the DB check `^[a-z][a-z0-9_]{1,63}$`. | Show an empty state; use sample batches only in offline (503) mode, labelled as sample. |
 | 7 | **Arko** (`Makefile`) | **DONE** (Hrittika, D36, PR #6) | `make dev` started the API on 8000 while Vite forwards `/api` to 8008, so every local API call failed. | Header showed "API down". | Makefile, README and the 5 agent instruction files use port 8008. |
-| 8 | **Shads** (Task 3) | OPEN | Money chart Y axis shows "৳0.0M" on every tick (`web/src/Evidence.tsx:403` divides by 1,000,000; values are in thousands). | All four ticks read ৳0.0M. | Use `formatBDT(val)`, or divide by 1000 and show `k`. |
+| 8 | **Shads** (Task 3) | **PR #8** (Hrittika, D41) | Money chart Y axis shows "৳0.0M" on every tick (`web/src/Evidence.tsx:403` divides by 1,000,000; values are in thousands). | All four ticks read ৳0.0M. | Use `formatBDT(val)`, or divide by 1000 and show `k`. |
 | 9 | **Shads** | OPEN | Table shows fractional people, e.g. "84.41" recovered users. | Evidence money table, 4% row. | Round for display, or label the column "expected". |
 | 10 | **Arko** (Task 6) | **PR #7** (Hrittika, D40) | The hour-0 stub endpoints `/api/triage`, `/profile`, `/explain`, `/refuse` returned the same hard-coded answer for any input, had no auth or validation, and `/api/triage` let anyone write audit rows. | `POST /api/triage {"wallet_id":"anything at all"}` returned "attributed: job_exit" at 0.30, which the 0.80 refusal bar forbids. The Queue quick lookup called `/api/triage` and showed "evaluated via live Cause Desk model" for it. | Removed with their models and example data. Side effects listed in section 4. |
 | 11 | **Arko** (`src/api/auth.py`, from `599818d`) | **PR #7** (Hrittika, D40) | `except Exception` in `current_user` turned a Supabase outage into **401 "Invalid or expired token"**; the contract says 503. | A paused free-tier project would look like a bad login instead of showing the offline banner. | One app-level handler maps network errors and auth 5xx to 503 "Write path offline"; tests cover auth and DB outages. |
@@ -99,8 +99,8 @@ Good: `docs/DEPLOYMENT.md`, slim runtime `requirements.txt`, `make deploy`, the 
 
 ## 6. Suggested order
 
-1. **Hrittika:** review and merge PR #7 (merging deploys automatically), with #21 and #22; then #18.
-2. **Shads:** #2, #3, #5, #6 together (one branch), then #18b, #4, #8, #9, #13, #15.
+1. **Hrittika:** review and merge PR #7 and PR #8 (each merge deploys automatically), with #21 and #22; then #18.
+2. **Shads:** #3 first (urgent once PR #8 merges), then #18b, #4, #9, #13, #15. (#2, #5, #6, #8 done in PR #8.)
 3. **Shads + Arko:** #14 on prod once #2 and #3 land.
 4. **Team:** #20 answer for the demo script; process rule: no direct pushes to `main`.
 
