@@ -19,6 +19,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from datagen.generate import main as generate
+from scripts.depth import depth
 from scripts.evaluate import _split, report
 from src.model.score import explain, save
 from src.model.train import ACCURACY_FLOOR, train
@@ -126,7 +127,7 @@ def export(seed: int, root: Path = ROOT, out: Path = ROOT / "web" / "public" / "
             "honesty_line": HONESTY_LINE,
         },
         "wallets": sample,
-        "report": {**rep, "money": money, "assumptions": ASSUMPTIONS + MODEL_ASSUMPTIONS},
+        "report": {**rep, "money": money, "assumptions": ASSUMPTIONS + MODEL_ASSUMPTIONS, "depth": depth(seed, root)},
         "remedies": REMEDIES,
     })
     out.parent.mkdir(parents=True, exist_ok=True)

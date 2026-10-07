@@ -1,2 +1,2 @@
-# LightGBM cannot parse a model file with CRLF line endings; keep it LF on every checkout (D62).
-src/model/artifacts/model.txt -text
+# LightGBM aborts on CRLF model files (Windows checkouts with core.autocrlf=true)
+src/model/artifacts/*.txt -text
