@@ -15,7 +15,12 @@ proxied through the existing Python `supabase` client.
 | `POST /api/batches` | analyst | `{cause, wallet_ids: string[1..1000]}` | `Batch` | 401, 403 not analyst, 409 wallet already in an open batch, 422 |
 | `POST /api/batches/{id}/approve` | approver, not proposer | `{note: string[1..500]}` | `Batch` | 401, 403 (role, or self-approval), 404, 409 not `proposed` |
 | `POST /api/batches/{id}/reject` | approver, not proposer | `{note: string[1..500]}` | `Batch` | same as approve |
-| `GET /api/batches/{id}/export` | anyone | — | `{batch_id, cause, remedy_code, wallet_ids, cost_bdt, approved_by, approved_at}` | 404, 409 not approved |
+| `GET /api/batches/{id}/export` | signed in | `?format=json\|csv` | `{batch_id, cause, remedy_code, wallet_ids, cost_bdt, approved_by, approved_at}`, or CSV one row per wallet | 401, 404, 409 not approved, 422 bad format |
+| `POST /api/batches/{id}/redeliver` | approver | — | `{delivered, status_code, error}` | 401, 403, 404, 409 not approved or no webhook configured |
+| `POST /api/score` | `X-API-Key` or signed in | `{wallets: WalletHistory[1..500]}` ([ingest.md](ingest.md)) | `{model_version, tau, delta, results: ScoreResult[]}` | 401, 403, 422, 503 model missing |
+| `POST /api/campaign/receipts` | gateway (HMAC headers) | `{batch_id, sent, delivered, failed, gateway_ref?, failed_wallet_ids?}` | the receipt | 401 bad/stale signature, 404, 409 not approved, 422, 503 no secret |
+
+Approve also POSTs the batch to `CAMPAIGN_WEBHOOK_URL` when it is set (D56, [`docs/integration.md`](../integration.md) §3).
 
 ```ts
 type Batch = {

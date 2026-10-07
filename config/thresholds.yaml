@@ -1,0 +1,18 @@
+# WhyQuiet Decision Thresholds Configuration
+
+diagnosis:
+  confidence_abstain_threshold: 0.45  # Abstain if top predicted probability is below this
+  margin_abstain_threshold: 0.08       # Abstain if top-2 difference is below this (ambiguous)
+  calibration_method: "isotonic"      # Options: 'isotonic', 'sigmoid'
+
+uplift:
+  persuadable_delta: 0.04            # tau >= delta -> Persuadable
+  sleeping_dog_delta: -0.02          # tau < -delta -> Sleeping Dog (Never contact)
+  sure_thing_organic_return_min: 0.25 # mu_0 >= 0.25 & |tau| < delta -> Sure Thing
+  lost_cause_organic_return_max: 0.25 # mu_0 < 0.25 & |tau| < delta -> Lost Cause
+  shrinkage_prior_weight: 0.15       # Cause-aware Bayesian prior blend weight
+
+allocation:
+  max_bisection_iterations: 50
+  budget_tolerance: 0.02             # Stop bisection when |Spend - Budget| / Budget <= 0.02
+  min_expected_roi: 1.05             # Minimum expected revenue to cost ratio

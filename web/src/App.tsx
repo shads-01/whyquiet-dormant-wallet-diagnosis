@@ -6,6 +6,7 @@ import Queue from "./Queue";
 import Wallet from "./Wallet";
 import Batches from "./Batches";
 import Evidence from "./Evidence";
+import Score from "./Score";
 import { Button, Modal, Field, Input, Chip } from "./design/ui";
 import { login, getStoredUser, clearStoredUser, type UserSession } from "./api";
 
@@ -136,7 +137,8 @@ export default function App() {
   const walletMatch = hash.match(/^#\/w\/([A-Za-z0-9_-]+)/);
   const isBatches = hash.startsWith("#/batches");
   const isEvidence = hash.startsWith("#/evidence");
-  const isQueue = !isDesign && !walletMatch && !isBatches && !isEvidence;
+  const isScore = hash.startsWith("#/score");
+  const isQueue = !isDesign && !walletMatch && !isBatches && !isEvidence && !isScore;
 
   if (isDesign) return <Design />;
 
@@ -183,7 +185,7 @@ export default function App() {
               </div>
             </a>
 
-            {/* Navigation Tabs (Queue / Batches / Evidence) */}
+            {/* Navigation Tabs (Queue / Batches / Evidence / Score) */}
             <nav className="hidden md:flex items-center gap-1" aria-label="Main Navigation">
               <a
                 href="#/"
@@ -217,6 +219,17 @@ export default function App() {
                 }`}
               >
                 Evidence
+              </a>
+              <a
+                href="#/score"
+                aria-current={isScore ? "page" : undefined}
+                className={`px-3 py-1.5 rounded-[var(--radius-sm)] text-xs font-semibold transition-colors ${
+                  isScore
+                    ? "bg-[var(--accent)] text-[var(--accent-fg)] shadow-[var(--shadow-1)]"
+                    : "text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--surface-2)]"
+                }`}
+              >
+                Score
               </a>
             </nav>
           </div>
@@ -369,6 +382,15 @@ export default function App() {
           >
             Evidence
           </a>
+          <a
+            href="#/score"
+            aria-current={isScore ? "page" : undefined}
+            className={`text-xs font-semibold px-2.5 py-1 rounded-[var(--radius-sm)] ${
+              isScore ? "bg-[var(--surface)] text-[var(--accent)]" : "text-[var(--text-muted)]"
+            }`}
+          >
+            Score
+          </a>
           <button
             type="button"
             onClick={() => setMode((m) => (m === "light" ? "dark" : "light"))}
@@ -388,6 +410,8 @@ export default function App() {
           <Batches user={user} onOpenLogin={() => setLoginOpen(true)} />
         ) : isEvidence ? (
           <Evidence />
+        ) : isScore ? (
+          <Score user={user} onOpenLogin={() => setLoginOpen(true)} />
         ) : (
           <Queue onNavigate={(wId) => (window.location.hash = `#/w/${wId}`)} />
         )}

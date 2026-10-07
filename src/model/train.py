@@ -9,33 +9,16 @@ from sklearn.model_selection import train_test_split
 from sklearn.utils.class_weight import compute_sample_weight
 
 from src.model.features import features
+from src.model.score import (  # noqa: F401  (re-exported for scripts and tests)
+    CAUSES,
+    decide,
+    predict,
+)
 
-CAUSES = ["job_exit", "migration", "solved_problem", "fee_shock", "supply_failure"]  # contract order
 TRAIN_DIR = Path(__file__).resolve().parents[2] / "data" / "train"
 ACCURACY_FLOOR = 0.97  # ASSUMED (D28): attributed wallets must be this accurate on the validation slice
 TAUS = np.round(np.arange(0.50, 0.901, 0.05), 2)
 DELTAS = np.round(np.arange(0.10, 0.401, 0.05), 2)
-
-
-def decide(proba: np.ndarray, tau: float, delta: float) -> tuple[list[str | None], list[list[str]]]:
-    causes: list[str | None] = []
-    reasons: list[list[str]] = []
-    for p in proba:
-        i, j = np.argsort(p)[::-1][:2]
-        why = []
-        if p[i] < tau:
-            why.append(f"Top cause {CAUSES[i]} {p[i]:.2f} is below the {tau:.2f} bar (tau)")
-        if p[i] - p[j] < delta:
-            why.append(f"{CAUSES[i]} vs {CAUSES[j]} margin {p[i] - p[j]:.2f} is below {delta:.2f} (delta)")
-        causes.append(None if why else CAUSES[i])
-        reasons.append(why)
-    return causes, reasons
-
-
-def predict(booster: lgb.Booster, X: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
-    proba = np.asarray(booster.predict(X))
-    contrib = np.asarray(booster.predict(X, pred_contrib=True)).reshape(len(X), len(CAUSES), X.shape[1] + 1)
-    return proba, contrib
 
 
 def _tune(proba: np.ndarray, y: np.ndarray) -> tuple[float, float]:

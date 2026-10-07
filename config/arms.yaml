@@ -1,0 +1,73 @@
+# WhyQuiet Action Arms & Incentive Configuration
+# Action arms: A0, A1, A2, A3, A_ops, A_none
+
+default_campaign_budget_bdt: 500000.0
+budget_tolerance_rate: 0.02  # Solver must converge within 2% of budget
+
+arms:
+  A0:
+    code: "A0"
+    name: "Informational Nudge / Shortcut"
+    description: "Zero-incentive reminder with zero-rated USSD shortcut or app deep link."
+    incentive_cost_bdt: 0.00
+    delivery_cost_sms_bdt: 0.50
+    delivery_cost_push_bdt: 0.05
+    total_cost_bdt: 0.50
+    compatible_causes: ["fee_shock", "supply_failure", "migration"]
+    target_segment: "persuadable"
+
+  A1:
+    code: "A1"
+    name: "Micro-credit / Emergency Balance"
+    description: "Pre-approved small overdraft/credit buffer (50–100 BDT) to bridge liquidity gaps."
+    incentive_cost_bdt: 25.00
+    delivery_cost_sms_bdt: 0.50
+    delivery_cost_push_bdt: 0.05
+    total_cost_bdt: 25.50
+    compatible_causes: ["fee_shock", "migration"]
+    target_segment: "persuadable"
+
+  A2:
+    code: "A2"
+    name: "Merchant / Cash-Out Offset"
+    description: "Instant 15 BDT cashback voucher on the next merchant payment or cash-in."
+    incentive_cost_bdt: 15.00
+    delivery_cost_sms_bdt: 0.50
+    delivery_cost_push_bdt: 0.05
+    total_cost_bdt: 15.50
+    compatible_causes: ["migration", "fee_shock"]
+    target_segment: "persuadable"
+
+  A3:
+    code: "A3"
+    name: "Targeted Fee Waiver"
+    description: "100% cash-out fee refund on next transaction within 7 days."
+    incentive_cost_bdt: 10.00
+    delivery_cost_sms_bdt: 0.50
+    delivery_cost_push_bdt: 0.05
+    total_cost_bdt: 10.50
+    compatible_causes: ["fee_shock"]
+    target_segment: "persuadable"
+
+  A_ops:
+    code: "A_ops"
+    name: "Ops Float Ticket & Proximity Alert"
+    description: "Cluster dispatch to agent field officers for cash float replenishment, followed by local SMS alert."
+    incentive_cost_bdt: 0.00
+    delivery_cost_sms_bdt: 0.50
+    delivery_cost_push_bdt: 0.05
+    ops_overhead_cost_bdt: 1.50
+    total_cost_bdt: 2.00
+    compatible_causes: ["supply_failure"]
+    target_segment: "persuadable"
+
+  A_none:
+    code: "A_none"
+    name: "Suppress Contact"
+    description: "Zero contact. Suppressed to prevent annoyance, negative churn (Sleeping Dogs), or wasted spend."
+    incentive_cost_bdt: 0.00
+    delivery_cost_sms_bdt: 0.00
+    delivery_cost_push_bdt: 0.00
+    total_cost_bdt: 0.00
+    compatible_causes: ["job_exit", "solved_problem", "fee_shock", "supply_failure", "migration"]
+    target_segment: "any"

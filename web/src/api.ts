@@ -1,3 +1,4 @@
+import type { components } from "./api/schema";
 import type { Cause } from "./seed";
 
 export interface UserSession {
@@ -19,7 +20,10 @@ export interface Batch {
   decided_at: string | null;
   decision_note: string | null;
   created_at: string;
+  sms?: SmsStatus | null;
 }
+
+export type SmsStatus = components["schemas"]["SmsStatus"];
 
 export interface ExportBatchResponse {
   batch_id: string;
@@ -39,8 +43,8 @@ export interface LockedWallet {
 
 export interface AuditEntry {
   id: string;
-  actor_id: string;
-  actor_role: "analyst" | "approver";
+  actor_id: string | null;
+  actor_role: "analyst" | "approver" | "system";
   action: string;
   target_id: string;
   metadata: Record<string, any>;
@@ -205,4 +209,32 @@ export async function exportBatch(id: string): Promise<ExportBatchResponse> {
   });
 
   return handleApiResponse<ExportBatchResponse>(res);
+}
+
+export type ScoreResponse = components["schemas"]["ScoreResponse"];
+export type ScoreResult = components["schemas"]["ScoreResult"];
+export type WalletHistory = components["schemas"]["WalletHistory"];
+export type DeliveryResult = components["schemas"]["DeliveryResult"];
+
+export async function scoreWallets(wallets: WalletHistory[]): Promise<ScoreResponse> {
+  const res = await fetch("/api/score", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...getAuthHeader() },
+    body: JSON.stringify({ wallets }),
+  });
+  return handleApiResponse<ScoreResponse>(res);
+}
+
+export async function redeliverBatch(id: string): Promise<DeliveryResult> {
+  const res = await fetch(`/api/batches/${id}/redeliver`, {
+    method: "POST",
+    headers: { ...getAuthHeader() },
+  });
+  return handleApiResponse<DeliveryResult>(res);
+}
+
+export async function exportBatchCsv(id: string): Promise<Blob> {
+  const res = await fetch(`/api/batches/${id}/export?format=csv`, { headers: { ...getAuthHeader() } });
+  if (!res.ok) await handleApiResponse<never>(res);
+  return res.blob();
 }

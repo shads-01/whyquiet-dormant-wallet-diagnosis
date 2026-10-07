@@ -90,6 +90,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/batches/{id}/redeliver": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Redeliver Batch */
+        post: operations["redeliver_batch_api_batches__id__redeliver_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/campaign/receipts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Campaign Receipt */
+        post: operations["campaign_receipt_api_campaign_receipts_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/wallets/locked": {
         parameters: {
             query?: never;
@@ -124,6 +158,103 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/score": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Score */
+        post: operations["score_api_score_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reengage/diagnose-and-allocate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Diagnose And Allocate Single
+         * @description Diagnose a single dormant wallet, estimate uplift, allocate remedy, and generate message.
+         */
+        post: operations["diagnose_and_allocate_single_api_v1_reengage_diagnose_and_allocate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/campaign/plan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Plan Campaign Batch
+         * @description Run budget-constrained Lagrangian allocation across a sample cohort.
+         */
+        post: operations["plan_campaign_batch_api_v1_campaign_plan_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/metrics/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Metrics Summary
+         * @description Retrieve headline system accuracy and economic waste metrics.
+         */
+        get: operations["get_metrics_summary_api_v1_metrics_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ops/tickets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Ops Tickets
+         * @description Retrieve active agent float and cashout resolution tickets.
+         */
+        get: operations["get_ops_tickets_api_v1_ops_tickets_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/health": {
         parameters: {
             query?: never;
@@ -141,6 +272,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Health */
+        get: operations["health_health_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -150,19 +298,24 @@ export interface components {
             /** Id */
             id: string;
             /** Actor Id */
-            actor_id: string;
-            actor_role: components["schemas"]["UserRole"];
+            actor_id?: string | null;
+            actor_role: components["schemas"]["AuditRole"];
             /** Action */
             action: string;
             /** Target Id */
             target_id: string;
             /** Metadata */
             metadata?: {
-                [key: string]: string | number | boolean | null;
+                [key: string]: string | number | boolean | string[] | null;
             };
             /** Created At */
             created_at: string;
         };
+        /**
+         * AuditRole
+         * @enum {string}
+         */
+        AuditRole: "analyst" | "approver" | "system";
         /** Batch */
         Batch: {
             /** Id */
@@ -185,17 +338,69 @@ export interface components {
             decision_note?: string | null;
             /** Created At */
             created_at: string;
+            sms?: components["schemas"]["SmsStatus"] | null;
         };
         /**
          * BatchStatus
          * @enum {string}
          */
         BatchStatus: "proposed" | "approved" | "rejected";
+        /** CampaignPlanRequest */
+        CampaignPlanRequest: {
+            /**
+             * Budget Bdt
+             * @default 500000
+             */
+            budget_bdt: number;
+            /**
+             * Wallet Sample Size
+             * @default 1000
+             */
+            wallet_sample_size: number;
+        };
+        /** CampaignPlanResponse */
+        CampaignPlanResponse: {
+            /** Budget Bdt */
+            budget_bdt: number;
+            /** Total Spend Bdt */
+            total_spend_bdt: number;
+            /** Budget Utilization Rate */
+            budget_utilization_rate: number;
+            /** Total Wallets Evaluated */
+            total_wallets_evaluated: number;
+            /** Total Wallets Targeted */
+            total_wallets_targeted: number;
+            /** Total Wallets Suppressed */
+            total_wallets_suppressed: number;
+            /** Expected Incremental Reactivations */
+            expected_incremental_reactivations: number;
+            /** Expected Incremental Revenue Bdt */
+            expected_incremental_revenue_bdt: number;
+            /** Cost Per Incremental Reactivation Bdt */
+            cost_per_incremental_reactivation_bdt: number;
+            /** Wasted Spend Rate */
+            wasted_spend_rate: number;
+            /** Shadow Price Lambda */
+            shadow_price_lambda: number;
+            /** Arm Breakdown */
+            arm_breakdown: {
+                [key: string]: number;
+            };
+        };
         /**
          * CauseFamily
          * @enum {string}
          */
         CauseFamily: "job_exit" | "migration" | "solved_problem" | "fee_shock" | "supply_failure";
+        /** Contribution */
+        Contribution: {
+            /** Feature */
+            feature: string;
+            /** Value */
+            value: number;
+            /** Contribution */
+            contribution: number;
+        };
         /** CreateBatchRequest */
         CreateBatchRequest: {
             cause: components["schemas"]["CauseFamily"];
@@ -206,6 +411,15 @@ export interface components {
         DecisionRequest: {
             /** Note */
             note: string;
+        };
+        /** DeliveryResult */
+        DeliveryResult: {
+            /** Delivered */
+            delivered: boolean;
+            /** Status Code */
+            status_code?: number | null;
+            /** Error */
+            error?: string | null;
         };
         /** ExportBatchResponse */
         ExportBatchResponse: {
@@ -240,6 +454,8 @@ export interface components {
              * @default false
              */
             stub: boolean;
+            /** Model Version */
+            model_version?: string | null;
         };
         /**
          * LockReason
@@ -270,6 +486,170 @@ export interface components {
             role: components["schemas"]["UserRole"];
         };
         /**
+         * PayCycle
+         * @enum {string}
+         */
+        PayCycle: "weekly" | "biweekly" | "monthly";
+        /** Receipt */
+        Receipt: {
+            /**
+             * Batch Id
+             * Format: uuid
+             */
+            batch_id: string;
+            /** Sent */
+            sent: number;
+            /** Delivered */
+            delivered: number;
+            /** Failed */
+            failed: number;
+            /** Gateway Ref */
+            gateway_ref?: string | null;
+            /** Failed Wallet Ids */
+            failed_wallet_ids?: string[];
+        };
+        /** Remedy */
+        Remedy: {
+            /** Remedy Code */
+            remedy_code: string;
+            /** Label */
+            label: string;
+            /** Unit Cost Bdt */
+            unit_cost_bdt: number;
+        };
+        /** RuleBaseline */
+        RuleBaseline: {
+            /** Fired */
+            fired: boolean;
+            /** Action */
+            action: string;
+        };
+        /** ScoreRequest */
+        ScoreRequest: {
+            /** Wallets */
+            wallets: components["schemas"]["WalletHistory"][];
+        };
+        /** ScoreResponse */
+        ScoreResponse: {
+            /** Model Version */
+            model_version: string;
+            /** Tau */
+            tau: number;
+            /** Delta */
+            delta: number;
+            /** Results */
+            results: components["schemas"]["ScoreResult"][];
+        };
+        /** ScoreResult */
+        ScoreResult: {
+            /** Wallet Id */
+            wallet_id: string;
+            /** Weeks Silent */
+            weeks_silent: number;
+            /**
+             * Verdict
+             * @enum {string}
+             */
+            verdict: "attributed" | "refused";
+            cause: components["schemas"]["CauseFamily"] | null;
+            /** Posterior */
+            posterior: {
+                [key: string]: number;
+            };
+            /** Contributions */
+            contributions: components["schemas"]["Contribution"][];
+            /** Refusal Reasons */
+            refusal_reasons: string[];
+            rule_baseline: components["schemas"]["RuleBaseline"];
+            remedy: components["schemas"]["Remedy"] | null;
+        };
+        /** SingleWalletRequest */
+        SingleWalletRequest: {
+            /**
+             * Wallet Id
+             * @description Pseudonymous wallet identifier
+             * @default W-001234
+             */
+            wallet_id: string;
+            /**
+             * Features
+             * @description Wallet behavioral and transaction features
+             */
+            features: {
+                [key: string]: unknown;
+            };
+            /**
+             * Dnd Registered
+             * @default false
+             */
+            dnd_registered: boolean;
+            /**
+             * Blocklisted
+             * @default false
+             */
+            blocklisted: boolean;
+            /**
+             * Language
+             * @description 'bn' or 'en'
+             * @default bn
+             */
+            language: string;
+        };
+        /** SingleWalletResponse */
+        SingleWalletResponse: {
+            /** Wallet Id */
+            wallet_id: string;
+            /** Diagnosed Cause */
+            diagnosed_cause: string;
+            /** Is Attributed */
+            is_attributed: boolean;
+            /** Confidence */
+            confidence: number;
+            /** Margin */
+            margin: number;
+            /** Abstain Reason */
+            abstain_reason: string | null;
+            /** Evidence Reasons */
+            evidence_reasons: string[];
+            /** Causal Segment */
+            causal_segment: string;
+            /** Assigned Arm */
+            assigned_arm: string;
+            /** Arm Name */
+            arm_name: string;
+            /** Cost Bdt */
+            cost_bdt: number;
+            /** Expected Incremental Lift */
+            expected_incremental_lift: number;
+            /** Is Safe To Contact */
+            is_safe_to_contact: boolean;
+            /** Suppression Reason */
+            suppression_reason: string | null;
+            /** Rendered Message */
+            rendered_message: string;
+            /** Channel */
+            channel: string;
+            /** Decision Trace */
+            decision_trace: {
+                [key: string]: unknown;
+            };
+        };
+        /** SmsStatus */
+        SmsStatus: {
+            /** Gateway Connected */
+            gateway_connected: boolean;
+            /** Webhook */
+            webhook?: ("delivered" | "failed") | null;
+            /** Sent */
+            sent?: number | null;
+            /** Delivered */
+            delivered?: number | null;
+            /** Failed */
+            failed?: number | null;
+            /** Failed Wallet Ids */
+            failed_wallet_ids?: string[];
+        };
+        /**
          * StoreKind
          * @enum {string}
          */
@@ -291,6 +671,49 @@ export interface components {
             input?: unknown;
             /** Context */
             ctx?: Record<string, never>;
+        };
+        /** WalletHistory */
+        WalletHistory: {
+            /** Wallet Id */
+            wallet_id: string;
+            /** Acquired Week */
+            acquired_week: number;
+            /** Fee Week */
+            fee_week: number;
+            pay_cycle: components["schemas"]["PayCycle"];
+            /** Weeks */
+            weeks: components["schemas"]["WeekRow"][];
+        };
+        /** WeekRow */
+        WeekRow: {
+            /** Week */
+            week: number;
+            /** Txn Count */
+            txn_count: number;
+            /** Amount Bdt */
+            amount_bdt: number;
+            /**
+             * Cashin Count
+             * @default 0
+             */
+            cashin_count: number;
+            /**
+             * Cashout Ok
+             * @default 0
+             */
+            cashout_ok: number;
+            /**
+             * Cashout Fail
+             * @default 0
+             */
+            cashout_fail: number;
+            /** App Share */
+            app_share?: number | null;
+            /**
+             * District Changed
+             * @default false
+             */
+            district_changed: boolean;
         };
     };
     responses: never;
@@ -478,7 +901,9 @@ export interface operations {
     };
     export_batch_api_batches__id__export_get: {
         parameters: {
-            query?: never;
+            query?: {
+                format?: "json" | "csv";
+            };
             header?: {
                 authorization?: string | null;
             };
@@ -496,6 +921,76 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ExportBatchResponse"];
+                    "text/csv": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    redeliver_batch_api_batches__id__redeliver_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeliveryResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    campaign_receipt_api_campaign_receipts_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "x-whyquiet-timestamp": string;
+                "x-whyquiet-signature": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Receipt"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Receipt"];
                 };
             };
             /** @description Validation Error */
@@ -573,7 +1068,169 @@ export interface operations {
             };
         };
     };
+    score_api_score_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-api-key"?: string | null;
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScoreRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScoreResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    diagnose_and_allocate_single_api_v1_reengage_diagnose_and_allocate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SingleWalletRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SingleWalletResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    plan_campaign_batch_api_v1_campaign_plan_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CampaignPlanRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CampaignPlanResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_metrics_summary_api_v1_metrics_summary_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_ops_tickets_api_v1_ops_tickets_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
     health_api_health_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HealthResponse"];
+                };
+            };
+        };
+    };
+    health_health_get: {
         parameters: {
             query?: never;
             header?: never;

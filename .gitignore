@@ -1,54 +1,45 @@
-# secrets / env
+# Secrets & Environment
 .env*
 !.env.example
 .vercel
 supabase/.temp
 .opencode/
 
+# Python & Virtual Environments
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+.ruff_cache/
+.pyright/
+.pytest_cache/
+.coverage
+htmlcov/
 
-# python
-.venv
-__pycache__
-*.pyc
-.ruff_cache
-.pyright
+# Node & Frontend
+node_modules/
+dist/
+playwright-report/
+test-results/
 
-# node
-node_modules
-dist
-playwright-report
-test-results
-
-# local stores / data outputs
-.local
+# Local stores & data outputs (> 20MB or regenerated)
+.local/
 data/train/*
 !data/train/.gitkeep
 data/a_test/
 data/b/
 truth/*
 !truth/.gitkeep
+data/*.parquet
+data/*.csv
+models/*.joblib
+models/*.bin
+results/*.csv
+results/*.png
+!results/.gitkeep
 
-# PRIVATE RESEARCH — never publish
-docs/v2/
-docs/v3/*
-docs/01-*/
-docs/02-*/
-docs/archive/
-spikes/
-IDEA_POOL.md
-CONTEXT*.md
-docs/superpowers/
-.superpowers/
-*.pdf
-*.docx
-docs/PROJECT_REPORT.md
-docs/slides/
-
-
-
-# os / editor
+# OS / Editor files
 .DS_Store
 Thumbs.db
-
-.vercel
-.env*
+*.swp
+*~

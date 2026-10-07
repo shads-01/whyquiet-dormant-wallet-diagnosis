@@ -373,6 +373,7 @@ export function Modal({
   children,
   footer,
   testid,
+  wide,
 }: {
   open: boolean;
   onClose: () => void;
@@ -380,6 +381,7 @@ export function Modal({
   children: ReactNode;
   footer?: ReactNode;
   testid?: string;
+  wide?: boolean;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
@@ -394,7 +396,7 @@ export function Modal({
   return (
     <dialog
       ref={ref}
-      className="modal"
+      className={`modal ${wide ? "modal-wide" : ""}`}
       data-testid={testid}
       aria-labelledby={titleId}
       onClose={onClose}
