@@ -17,6 +17,12 @@ jobs:
           cache-dependency-path: web/package-lock.json
       - run: cd web && npm ci
       - run: make check
+      # The Vercel function gets only requirements.txt; fail here if the API needs anything else (D62).
+      - name: Serverless import check
+        run: |
+          uv venv /tmp/runtime --python 3.12
+          uv pip install --python /tmp/runtime/bin/python -r requirements.txt
+          /tmp/runtime/bin/python -I -c "import sys; sys.path.insert(0, '.'); import api.index"
   e2e:
     runs-on: ubuntu-latest
     steps:

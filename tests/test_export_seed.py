@@ -62,9 +62,10 @@ def test_each_wallet_matches_contract(bundle: dict):
 def test_report_and_remedies(bundle: dict):
     report = bundle["report"]
     assert set(report) == {
-        "ml", "confusion_b", "fairness", "calibration_bins", "per_cause_f1_b", "money", "break_even", "sweep", "routing_plan", "assumptions",
-        "population_c", "pilot",
+        "ml", "confusion_b", "fairness", "calibration_bins", "per_cause_f1_b", "money", "money_inputs", "break_even", "sweep", "routing_plan", "assumptions",
+        "population_c", "pilot", "refusal_sweep", "depth",
     }
+    assert report["depth"]["coverage"]["operating_point"]["macro_f1"] == report["ml"]["macro_f1_b"]
     assert report["ml"]["macro_f1_b"] > report["ml"]["rule_baseline_f1_b"]
     assert len(report["calibration_bins"]) == 10
     assert len(report["per_cause_f1_b"]) == len(CAUSE_SET)
@@ -80,3 +81,30 @@ def test_report_and_remedies(bundle: dict):
     assert report["routing_plan"] and set(report["routing_plan"].keys()) == {"0.01", "0.04", "0.08"}
     assert report["assumptions"] and all("ASSUMED" in a for a in report["assumptions"])
     assert set(bundle["remedies"]) == CAUSE_SET
+
+
+def test_refusal_sweep_contains_the_shipped_operating_point(bundle: dict):
+    sweep, meta, ml = bundle["report"]["refusal_sweep"], bundle["meta"], bundle["report"]["ml"]
+    assert len(sweep) == 63 and all(set(p) == {"tau", "delta", "refusal_rate", "macro_f1"} for p in sweep)
+    here = next(p for p in sweep if p["tau"] == meta["tau"] and p["delta"] == meta["delta"])
+    assert here["refusal_rate"] == pytest.approx(ml["refusal_rate_b"], abs=1e-3)
+    assert here["macro_f1"] == pytest.approx(ml["macro_f1_b"], abs=1e-3)
+
+
+def test_money_inputs_rebuild_the_money_table(bundle: dict):
+    m = bundle["report"]["money_inputs"]
+    assert m["n_correct"] + m["n_wrong"] + m["n_refused"] == m["n_triaged"] == 3000
+    # money_table uses cause-specific unit costs and skips solved_problem, so the model row
+    # rebuilds from the per-cause breakdown, not the flat average (kept for the aggregate view).
+    assert set(m["per_cause"]) == CAUSE_SET and set(m["unit_costs_bdt"]) == CAUSE_SET
+    model = {r["recovery_rate"]: r for r in bundle["report"]["money"] if r["strategy"] == "model"}
+    for rate, row in model.items():
+        recovered = sum(
+            c["correct"] * rate + c["wrong"] * rate * m["generic_factor"]
+            for cause, c in m["per_cause"].items() if cause != "solved_problem"
+        )
+        cost = sum(
+            (c["correct"] + c["wrong"]) * m["unit_costs_bdt"][cause]
+            for cause, c in m["per_cause"].items() if cause != "solved_problem"
+        )
+        assert recovered * m["arpu_bdt"] * m["ramp"] - cost == pytest.approx(row["value_bdt"], abs=0.5)

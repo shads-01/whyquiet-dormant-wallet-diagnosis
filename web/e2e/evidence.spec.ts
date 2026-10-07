@@ -125,3 +125,46 @@ test.describe("Evidence & ML Rigor Page", () => {
     await expect(page.getByTestId("falsifiability-card")).toBeVisible();
   });
 });
+
+test.describe("Evidence phase 2 depth sections (real seed.json)", () => {
+  test("shows refusal dial, baselines, error anatomy, calibration, label-free checks and stress tests", async ({ page }) => {
+    await page.goto("/#/evidence");
+
+    const dial = page.getByTestId("refusal-dial-card");
+    await expect(dial).toBeVisible();
+    await expect(dial.locator(".recharts-line")).toHaveCount(2);
+    await expect(page.getByTestId("baseline-ladder-table").locator("tbody tr")).toHaveCount(5);
+    await expect(page.getByTestId("group-shift-table").locator("tbody tr")).toHaveCount(3);
+
+    await expect(page.getByTestId("per-class-table").locator("tbody tr")).toHaveCount(5);
+    await expect(page.getByTestId("ablation-table").locator("tbody tr")).toHaveCount(6);
+    await expect(page.getByTestId("blended-tiles")).toContainText("refused");
+
+    await expect(page.getByTestId("calibration-card").locator(".recharts-line")).toHaveCount(2);
+    await expect(page.getByTestId("atc-estimate-value")).toHaveText(/^\d+\.\d%$/);
+    await expect(page.getByTestId("cause-mix-table").locator("tbody tr")).toHaveCount(5);
+    await expect(page.getByTestId("drift-table").locator("tbody tr")).toHaveCount(6);
+
+    await expect(page.getByTestId("noise-dial-table").locator("tbody tr")).toHaveCount(4);
+    await expect(page.getByTestId("unseen-refusal-value")).toContainText("refused");
+
+    // The old card claimed calibration "within 5.2%" next to an error of 0.100
+    await expect(page.getByTestId("ml-rigor-panel")).not.toContainText("5.2%");
+  });
+
+  test("money section shows the value-gated strategy next to the rule", async ({ page }) => {
+    await page.goto("/#/evidence");
+    for (const s of ["rule", "model", "model_ev", "oracle"]) {
+      await expect(page.getByTestId(`money-row-${s}`)).toBeVisible();
+    }
+    await expect(page.getByTestId("money-row-model_ev")).toContainText("skip");
+  });
+
+  test("sample bundle without depth still renders the original four sections", async ({ page }) => {
+    await page.route("**/seed.json", (route) => route.abort());
+    await page.goto("/#/evidence");
+    await expect(page.getByTestId("evidence-view")).toBeVisible();
+    await expect(page.getByTestId("refusal-dial-card")).toHaveCount(0);
+    await expect(page.getByTestId("money-row-model")).toBeVisible();
+  });
+});

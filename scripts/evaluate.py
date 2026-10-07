@@ -8,6 +8,7 @@ Run: uv run python scripts/evaluate.py --seed 42
 import argparse
 import json
 import sys
+from collections.abc import Sequence
 from pathlib import Path
 from typing import cast
 
@@ -20,10 +21,10 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from src.model.features import features
-from src.model.train import CAUSES, decide, fit, predict, train
+from src.model.train import CAUSES, DELTAS, TAUS, decide, fit, predict, train
 
 
-def macro_f1(truth: list[str], pred: list[str | None]) -> float:
+def macro_f1(truth: Sequence[str], pred: Sequence[str | None]) -> float:
     kept = [(t, p) for t, p in zip(truth, pred) if p is not None]
     if not kept:
         return 0.0
@@ -144,6 +145,21 @@ def verdict_flip_rate(root: Path, X_b: pd.DataFrame, base_pred: list[str | None]
         if any(other_verdicts[s_idx][i] != base_verdicts[i] for s_idx in range(len(seeds))):
             flips += 1
     return float(flips / len(base_verdicts))
+
+
+def refusal_sweep(proba: np.ndarray, truth: list[str]) -> list[dict]:
+    """Refusal rate and macro-F1 on kept wallets for every (tau, delta) the tuner searches (same rule as `decide`)."""
+    top2 = np.sort(proba, axis=1)[:, -2:]
+    top, margin = top2[:, 1], top2[:, 1] - top2[:, 0]
+    guess = np.array(CAUSES)[proba.argmax(axis=1)]
+    rows = []
+    for tau in TAUS:
+        for delta in DELTAS:
+            kept = (top >= tau) & (margin >= delta)
+            pred = [g if k else None for g, k in zip(guess, kept)]
+            rows.append({"tau": float(tau), "delta": float(delta), "refusal_rate": float(1 - kept.mean()),
+                         "macro_f1": macro_f1(truth, pred)})
+    return rows
 
 
 def _split(root: Path, name: str, labels: Path) -> tuple[pd.DataFrame, pd.DataFrame, list[str]]:

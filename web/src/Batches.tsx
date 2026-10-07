@@ -143,7 +143,10 @@ export default function Batches({ user: propUser, onOpenLogin }: BatchesProps) {
   const user = propUser !== undefined ? propUser : getStoredUser();
 
   // Propose state
-  const [selectedCause, setSelectedCause] = useState<Cause>("job_exit");
+  const [selectedCause, setSelectedCause] = useState<Cause>(() => {
+    const asked = new URLSearchParams(window.location.hash.split("?")[1]).get("cause");
+    return asked && asked in CAUSE_LABELS ? (asked as Cause) : "job_exit";
+  });
   const [proposing, setProposing] = useState(false);
   const [proposeSuccess, setProposeSuccess] = useState<string | null>(null);
   const [proposeError, setProposeError] = useState<string | null>(null);

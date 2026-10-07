@@ -6,6 +6,8 @@ import Queue from "./Queue";
 import Wallet from "./Wallet";
 import Batches from "./Batches";
 import Evidence from "./Evidence";
+import Causes from "./Causes";
+import Calibration from "./Calibration";
 import Score from "./Score";
 import { Button, Modal, Field, Input, Chip } from "./design/ui";
 import { login, getStoredUser, clearStoredUser, type UserSession } from "./api";
@@ -138,7 +140,9 @@ export default function App() {
   const isBatches = hash.startsWith("#/batches");
   const isEvidence = hash.startsWith("#/evidence");
   const isScore = hash.startsWith("#/score");
-  const isQueue = !isDesign && !walletMatch && !isBatches && !isEvidence && !isScore;
+  const isCauses = hash.startsWith("#/causes");
+  const isCalibration = hash.startsWith("#/calibration");
+  const isQueue = !isDesign && !walletMatch && !isBatches && !isEvidence && !isScore && !isCauses && !isCalibration;
 
   if (isDesign) return <Design />;
 
@@ -185,7 +189,7 @@ export default function App() {
               </div>
             </a>
 
-            {/* Navigation Tabs (Queue / Batches / Evidence / Score) */}
+            {/* Navigation Tabs (Queue / Causes / Batches / Evidence / Calibration / Score) */}
             <nav className="hidden md:flex items-center gap-1" aria-label="Main Navigation">
               <a
                 href="#/"
@@ -197,6 +201,17 @@ export default function App() {
                 }`}
               >
                 Triage Queue
+              </a>
+              <a
+                href="#/causes"
+                aria-current={isCauses ? "page" : undefined}
+                className={`px-3 py-1.5 rounded-[var(--radius-sm)] text-xs font-semibold transition-colors ${
+                  isCauses
+                    ? "bg-[var(--accent)] text-[var(--accent-fg)] shadow-[var(--shadow-1)]"
+                    : "text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--surface-2)]"
+                }`}
+              >
+                Causes
               </a>
               <a
                 href="#/batches"
@@ -219,6 +234,17 @@ export default function App() {
                 }`}
               >
                 Evidence
+              </a>
+              <a
+                href="#/calibration"
+                aria-current={isCalibration ? "page" : undefined}
+                className={`px-3 py-1.5 rounded-[var(--radius-sm)] text-xs font-semibold transition-colors ${
+                  isCalibration
+                    ? "bg-[var(--accent)] text-[var(--accent-fg)] shadow-[var(--shadow-1)]"
+                    : "text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--surface-2)]"
+                }`}
+              >
+                Calibration
               </a>
               <a
                 href="#/score"
@@ -365,6 +391,15 @@ export default function App() {
             Queue
           </a>
           <a
+            href="#/causes"
+            aria-current={isCauses ? "page" : undefined}
+            className={`text-xs font-semibold px-2.5 py-1 rounded-[var(--radius-sm)] ${
+              isCauses ? "bg-[var(--surface)] text-[var(--accent)]" : "text-[var(--text-muted)]"
+            }`}
+          >
+            Causes
+          </a>
+          <a
             href="#/batches"
             aria-current={isBatches ? "page" : undefined}
             className={`text-xs font-semibold px-2.5 py-1 rounded-[var(--radius-sm)] ${
@@ -381,6 +416,15 @@ export default function App() {
             }`}
           >
             Evidence
+          </a>
+          <a
+            href="#/calibration"
+            aria-current={isCalibration ? "page" : undefined}
+            className={`text-xs font-semibold px-2.5 py-1 rounded-[var(--radius-sm)] ${
+              isCalibration ? "bg-[var(--surface)] text-[var(--accent)]" : "text-[var(--text-muted)]"
+            }`}
+          >
+            Dial
           </a>
           <a
             href="#/score"
@@ -404,12 +448,24 @@ export default function App() {
 
       {/* Main Routed Content */}
       <main id="main-content" tabIndex={-1} className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 focus:outline-none">
-        {walletMatch ? (
+        {!user ? (
+          <div className="max-w-md mx-auto text-center py-16 space-y-4" data-testid="signin-gate">
+            <h1 className="text-lg font-bold text-[var(--text)]">Sign in to continue</h1>
+            <p className="text-sm text-[var(--text-muted)]">Cause Desk is available to signed-in users only.</p>
+            <Button variant="primary" size="sm" onClick={() => setLoginOpen(true)} data-testid="gate-login-btn">
+              Sign In
+            </Button>
+          </div>
+        ) : walletMatch ? (
           <Wallet walletId={walletMatch[1]} onBack={() => (window.location.hash = "#/")} />
         ) : isBatches ? (
           <Batches user={user} onOpenLogin={() => setLoginOpen(true)} />
         ) : isEvidence ? (
           <Evidence />
+        ) : isCauses ? (
+          <Causes />
+        ) : isCalibration ? (
+          <Calibration />
         ) : isScore ? (
           <Score user={user} onOpenLogin={() => setLoginOpen(true)} />
         ) : (

@@ -57,7 +57,15 @@ type Report = {
   confusion_b: { labels: Cause[]; matrix: number[][] };   // rows = true, cols = predicted (attributed only)
   fairness: { slice: "worker_type" | "pay_cycle"; group: string; n: number; macro_f1: number; refusal_rate: number }[];
   money: MoneyRow[] | null;        // null if src/rules.money not ready at export time
+  money_inputs?: MoneyInputs | null; // additive (D67): counts + constants behind `money`, for the recovery-rate simulator
+  refusal_sweep?: { tau: number; delta: number; refusal_rate: number; macro_f1: number }[]; // additive (D67): every (tau, delta) the tuner searches, scored on all of B
   assumptions: string[];           // every ASSUMED input, one line each
+  depth?: Depth;                   // ADDITIVE (D62-D66): scripts/depth.py output; full type in web/src/seed.ts
+};
+
+type MoneyInputs = {
+  n_triaged: number; n_correct: number; n_wrong: number; n_refused: number;
+  arpu_bdt: number; ramp: number; generic_factor: number; msg_cost_bdt: number; avg_remedy_cost_bdt: number;
 };
 
 type MoneyRow = {
