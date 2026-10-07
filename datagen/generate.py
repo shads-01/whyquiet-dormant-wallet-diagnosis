@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 
 CAUSES = ["job_exit", "solved_problem", "fee_shock", "supply_failure", "migration"]
+NOVEL = "device_loss"  # stress test only (population C, D61): phone lost or SIM swapped; never in A or B
 WORKERS = ["garment", "domestic", "transport", "retail"]
 CYCLES = ["weekly", "biweekly", "monthly"]
 ROOT = Path(__file__).resolve().parent.parent  # repo root: data/ and truth/ live here
@@ -53,6 +54,7 @@ PARAMS = {
         "blended": 0.30,
     },
 }
+PARAMS["C"] = {**PARAMS["B"], "novel": 0.20}  # B plus a cause the model has never seen; built in memory, never saved
 
 
 def _between(rng: np.random.Generator, lo_hi: tuple[int, int]) -> int:
@@ -111,6 +113,7 @@ def _effect(
         e["fail"][max(ramp_from, 0) : start] = np.linspace(1.0, 4.0, start - max(ramp_from, 0))
         e["ok"] = _ramp(WEEKS, ramp_from, start, 0.8, 0.2)
         e["count"] = _ramp(WEEKS, ramp_from, start, 0.9, 0.4)
+    # NOVEL (device_loss) changes nothing: activity simply stops at `start`, with no decline before it.
     return e
 
 
@@ -204,6 +207,8 @@ def make_population(
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Wallets, weekly rows and labels (wallet_id, cause, blended) for one population."""
     causes = rng.choice(CAUSES, size=len(ids), p=p["cause"])
+    if p.get("novel"):  # A and B skip this, so their random draws (and data) are unchanged
+        causes[rng.random(len(ids)) < p["novel"]] = NOVEL
     infos, weeklies, labels = [], [], []
     for wid, cause in zip(ids, causes):
         info, weekly, blended = _wallet(wid, str(cause), p, rng)

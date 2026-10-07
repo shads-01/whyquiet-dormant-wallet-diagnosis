@@ -3,6 +3,8 @@
 All financial and rate constants are ASSUMED and documented in ASSUMPTIONS.
 """
 
+from src.rules.remedies import REMEDIES
+
 # ASSUMED: average monthly revenue per active wallet in BDT
 ARPU_BDT: float = 120.0
 
@@ -93,4 +95,69 @@ def money_table(n_triaged: int, n_correct: int, n_wrong: int, n_refused: int) ->
             }
         )
 
+    return rows
+
+
+# Decision-aware money (D63): per-wallet choice between doing nothing, the blanket SMS and the targeted remedy.
+COSTS_BDT: dict[str, float] = {c: r["unit_cost_bdt"] for c, r in REMEDIES.items()}
+NO_RETURN = "solved_problem"  # ASSUMED: a wallet whose need is solved does not come back for any message
+EV_ASSUMPTIONS: list[str] = [
+    "ASSUMED: each targeted remedy costs its own unit cost from the remedy table, not the 11 BDT average.",
+    "ASSUMED: solved-problem wallets do not come back for any message, targeted or generic.",
+    "ASSUMED: refused wallets get nothing, so refusal never spends money.",
+]
+
+
+def expected_value(action: str, posterior: dict[str, float], rate: float) -> float:
+    """Expected BDT of one action on one wallet: P(it comes back) x ARPU x RAMP - cost."""
+    if action == "none":
+        return 0.0
+    rest = 1.0 - posterior.get(NO_RETURN, 0.0)
+    if action == "generic":
+        return rate * GENERIC_FACTOR * rest * ARPU_BDT * RAMP - MSG_COST_BDT
+    p = posterior[action]
+    return rate * (p + GENERIC_FACTOR * (rest - p)) * ARPU_BDT * RAMP - COSTS_BDT[action]
+
+
+def best_action(posterior: dict[str, float], rate: float) -> str:
+    """'none', 'generic' or a cause's targeted remedy: whichever has the highest expected value."""
+    options = ["none", "generic", *(c for c in posterior if c != NO_RETURN)]
+    return max(options, key=lambda a: expected_value(a, posterior, rate))
+
+
+def _outcome(action: str, cause: str, rate: float) -> tuple[float, float]:
+    """(users recovered, cost) when `action` meets a wallet whose true cause is `cause`."""
+    cost = MSG_COST_BDT if action == "generic" else COSTS_BDT.get(action, 0.0)
+    if action == "none" or cause == NO_RETURN:
+        return 0.0, cost
+    return (rate if action == cause else rate * GENERIC_FACTOR), cost
+
+
+def money_ev_table(posteriors: list[dict[str, float]], attributed: list[str | None], truth: list[str]) -> list[dict]:
+    """Rows for strategy in (rule, model, model_ev, oracle) x RECOVERY_RATES, scored against the true causes.
+
+    rule: blanket SMS to everyone. model: the attributed cause's remedy, refused get nothing. model_ev: best_action on
+    the model's posterior, refused get nothing. oracle: best_action knowing the true cause (the ceiling).
+    """
+    rows: list[dict] = []
+    for rate in RECOVERY_RATES:
+        plans = {
+            "rule": ["generic"] * len(truth),
+            "model": [c if c and c != NO_RETURN else "none" for c in attributed],  # solved remedy = no action
+            "model_ev": [best_action(p, rate) if c else "none" for p, c in zip(posteriors, attributed)],
+            "oracle": [best_action({c: float(c == t) for c in COSTS_BDT}, rate) for t in truth],
+        }
+        for strategy, actions in plans.items():
+            outcomes = [_outcome(a, t, rate) for a, t in zip(actions, truth)]
+            recovered, cost = sum(o[0] for o in outcomes), sum(o[1] for o in outcomes)
+            counts = {a: actions.count(a) for a in ["none", "generic", *COSTS_BDT] if a in actions}
+            rows.append({
+                "recovery_rate": rate,
+                "strategy": strategy,
+                "wallets_actioned": len(actions) - actions.count("none"),
+                "users_recovered": round(recovered, 4),
+                "cost_bdt": round(cost, 2),
+                "value_bdt": round(recovered * ARPU_BDT * RAMP - cost, 2),
+                "actions": counts,
+            })
     return rows
