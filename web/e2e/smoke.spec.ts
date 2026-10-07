@@ -1,6 +1,6 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
-test("smoke: title and api badge", async ({ page }) => {
+test("smoke: title and api badge", async ({ authedPage: page }) => {
   // Pin to seed.sample.json: these tests use known sample wallets; real-data.spec.ts covers seed.json.
   await page.route("**/seed.json", (route) => route.fulfill({ status: 404 }));
   await page.goto("/");

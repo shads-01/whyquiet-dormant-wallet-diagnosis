@@ -1,25 +1,25 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
 // Runs on the real web/public/seed.json (exported by scripts/export_seed.py). No wallet ids are
 // hard-coded, so a re-export never breaks it. The other specs pin to seed.sample.json.
 test.describe("Real seed.json", () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ authedPage: page }) => {
     await page.goto("/#/");
     await expect(page.getByTestId("queue-table")).toBeVisible();
   });
 
-  test("loads real data, not the sample", async ({ page }) => {
+  test("loads real data, not the sample", async ({ authedPage: page }) => {
     await expect(page.getByTestId("sample-banner")).toHaveCount(0);
   });
 
-  test("a refused wallet shows the refusal headline and model reasons", async ({ page }) => {
+  test("a refused wallet shows the refusal headline and model reasons", async ({ authedPage: page }) => {
     await page.getByTestId("filter-verdict").selectOption("refused");
     await page.getByTestId("queue-table").locator("tbody tr").first().click();
     await expect(page.getByTestId("refusal-headline")).toContainText("No attributable cause");
     await expect(page.getByTestId("refusal-reasons-list").locator("li").first()).toContainText(/tau|delta/);
   });
 
-  test("the inactive-window shading covers exactly the silent weeks", async ({ page, request }) => {
+  test("the inactive-window shading covers exactly the silent weeks", async ({ authedPage: page, request }) => {
     // A wallet acquired after week 0, so list position and week number differ.
     type W = { wallet_id: string; weeks_silent: number; series: { week: number }[] };
     const { wallets } = (await (await request.get("/seed.json")).json()) as { wallets: W[] };
@@ -38,7 +38,7 @@ test.describe("Real seed.json", () => {
     await expect.poll(async () => (await geometry()).map((d) => Math.abs(d) < 3)).toEqual([true, true]);
   });
 
-  test("an attributed wallet shows its remedy and decline chart", async ({ page }) => {
+  test("an attributed wallet shows its remedy and decline chart", async ({ authedPage: page }) => {
     await page.getByTestId("filter-verdict").selectOption("attributed");
     await page.getByTestId("queue-table").locator("tbody tr").first().click();
     await expect(page.getByTestId("remedy-card")).toBeVisible();

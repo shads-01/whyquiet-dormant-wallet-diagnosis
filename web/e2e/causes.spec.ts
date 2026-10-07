@@ -1,9 +1,9 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
 const CAUSES = ["job_exit", "migration", "solved_problem", "fee_shock", "supply_failure"];
 
 test.describe("Five Causes page", () => {
-  test("shows one card per cause with wallets, a remedy and a Bangla message", async ({ page }) => {
+  test("shows one card per cause with wallets, a remedy and a Bangla message", async ({ authedPage: page }) => {
     await page.goto("/#/causes");
     await expect(page.getByTestId("causes-view")).toBeVisible();
     for (const c of CAUSES) {
@@ -15,14 +15,14 @@ test.describe("Five Causes page", () => {
     }
   });
 
-  test("Propose a batch opens Batches with that cause preselected", async ({ page }) => {
+  test("Propose a batch opens Batches with that cause preselected", async ({ authedPage: page }) => {
     await page.goto("/#/causes");
     await page.getByTestId("propose-fee_shock").click();
     await expect(page).toHaveURL(/#\/batches\?cause=fee_shock/);
     await expect(page.getByTestId("propose-cause-select")).toHaveValue("fee_shock");
   });
 
-  test("mobile nav reaches the page and the cards fit a 375px screen", async ({ page }) => {
+  test("mobile nav reaches the page and the cards fit a 375px screen", async ({ authedPage: page }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto("/#/");
     await page.getByRole("navigation", { name: "Mobile Navigation" }).getByRole("link", { name: "Causes" }).click();

@@ -1,4 +1,5 @@
-import { test, expect, type Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
+import { test } from "./fixtures";
 import AxeBuilder from "@axe-core/playwright";
 
 // e2e runs without Supabase, so the real /api/auth/login is mocked. user_id equals the offline
@@ -23,7 +24,7 @@ async function signIn(page: Page, role: "analyst" | "approver", password = "demo
 }
 
 test.describe("Batches & Governance Page", () => {
-  test("loads batches view and displays governance list", async ({ page }) => {
+  test("loads batches view and displays governance list", async ({ authedPage: page }) => {
     await page.goto("/#/batches");
 
     await expect(page.getByTestId("batches-view")).toBeVisible();
@@ -32,11 +33,11 @@ test.describe("Batches & Governance Page", () => {
     await expect(page.getByTestId("batches-table")).toBeVisible();
   });
 
-  test("analyst propose flow: displays remedy preview, cost with ASSUMED, and creates batch", async ({ page }) => {
+  test("analyst propose flow: displays remedy preview, cost with ASSUMED, and creates batch", async ({ authedPage: page }) => {
+    await page.route("**/api/batches*", (route) =>
+      route.fulfill({ status: 503, json: { detail: "Write path offline" } })
+    );
     await page.goto("/#/batches");
-
-    // Sign in as Analyst via navbar or button
-    await signIn(page, "analyst");
 
     // Verify session via profile avatar
     await expect(page.getByTestId("profile-avatar-btn")).toBeVisible();
@@ -51,29 +52,23 @@ test.describe("Batches & Governance Page", () => {
     await expect(page.getByTestId("propose-success-msg")).toBeVisible();
   });
 
-  test("self-approval protection: proposer cannot approve their own batch", async ({ page }) => {
+  test("self-approval protection: proposer cannot approve their own batch", async ({ authedPage: page }) => {
     await page.route("**/api/batches*", (route) =>
       route.fulfill({ status: 503, json: { detail: "Write path offline" } })
     );
     await page.goto("/#/batches");
 
-    // Sign in as Analyst who proposed BATCH-8910
-    await signIn(page, "analyst");
-
-    // Verify self-approval notice on BATCH-8910
+    // Verify self-approval notice on BATCH-8910 (proposed by offline analyst sample)
     const selfNotice = page.getByTestId("self-approval-notice-BATCH-8910");
     await expect(selfNotice).toBeVisible();
     await expect(selfNotice).toContainText("You proposed this");
   });
 
-  test("approver flow: can approve batch with mandatory decision note", async ({ page }) => {
+  test("approver flow: can approve batch with mandatory decision note", async ({ authedPageApprover: page }) => {
     await page.route("**/api/batches*", (route) =>
       route.fulfill({ status: 503, json: { detail: "Write path offline" } })
     );
     await page.goto("/#/batches");
-
-    // Sign in as Approver
-    await signIn(page, "approver");
 
     // Verify Approver session
     await expect(page.getByTestId("profile-avatar-btn")).toBeVisible();
@@ -92,7 +87,7 @@ test.describe("Batches & Governance Page", () => {
     await expect(page.getByTestId("batch-row-BATCH-8910")).toContainText("APPROVED");
   });
 
-  test("campaign JSON download triggers for approved batches", async ({ page }) => {
+  test("campaign JSON download triggers for approved batches", async ({ authedPage: page }) => {
     await page.route("**/api/batches*", (route) =>
       route.fulfill({ status: 503, json: { detail: "Write path offline" } })
     );
@@ -108,7 +103,7 @@ test.describe("Batches & Governance Page", () => {
     expect(download.suggestedFilename()).toContain("campaign-SAMPLE-BATCH-8909.json");
   });
 
-  test("audit history timeline expands and displays entries", async ({ page }) => {
+  test("audit history timeline expands and displays entries", async ({ authedPage: page }) => {
     const id = "44444444-4444-4444-4444-444444444444";
     await page.route(/\/api\/batches/, async (route) => {
       if (route.request().url().includes("/audit")) {
@@ -172,7 +167,7 @@ test.describe("Batches & Governance Page", () => {
     await expect(page.getByTestId("login-modal")).toContainText("expired");
   });
 
-  test("mobile responsiveness at 375px width", async ({ page }) => {
+  test("mobile responsiveness at 375px width", async ({ authedPage: page }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto("/#/batches");
 
@@ -189,10 +184,10 @@ test.describe("Batches & Governance Page", () => {
     await expect(page.getByTestId("profile-avatar-btn")).toHaveCount(0);
   });
 
-  test("real batches: empty list shows no samples; proposer is matched by user id", async ({ page }) => {
+  test("real batches: empty list shows no samples; proposer is matched by user id", async ({ authedPage: page }) => {
     const mine = {
       id: "11111111-1111-4111-8111-111111111111", cause: "job_exit", remedy_code: "job_exit_payroll_reengage",
-      unit_cost_bdt: 15, wallet_count: 2, status: "proposed", proposed_by: "aaaaaaaa-0000-4000-8000-000000000001",
+      unit_cost_bdt: 15, wallet_count: 2, status: "proposed", proposed_by: "analyst@whyquiet.demo",
       decided_by: null, decided_at: null, decision_note: null, created_at: new Date().toISOString(),
     };
     let rows: object[] = [];
@@ -205,7 +200,6 @@ test.describe("Batches & Governance Page", () => {
 
     rows = [mine];
     await page.reload();
-    await signIn(page, "analyst", "demo-pass", mine.proposed_by);
     await expect(page.getByTestId(`self-approval-notice-${mine.id}`)).toBeVisible();
   });
 
