@@ -161,3 +161,14 @@ def test_no_acquisition_week_holds_a_single_cause(pops: dict[str, Population], n
 
 def test_unsourced_numbers_are_marked_assumed():
     assert "Every number in this file is ASSUMED unless noted" in (generate.__doc__ or "")
+
+
+def test_population_c_adds_an_unseen_cause_and_leaves_a_b_alone():
+    from datagen.generate import NOVEL
+
+    rng = np.random.default_rng(7)
+    _, _, labels = make_population(PARAMS["C"], wallet_ids(2000, rng), rng)
+    share = (labels["cause"] == NOVEL).mean()
+    assert 0.15 < share < 0.25
+    assert NOVEL not in CAUSES
+    assert "novel" not in PARAMS["A"] and "novel" not in PARAMS["B"]

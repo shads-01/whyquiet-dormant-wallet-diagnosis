@@ -61,7 +61,8 @@ def test_each_wallet_matches_contract(bundle: dict):
 
 def test_report_and_remedies(bundle: dict):
     report = bundle["report"]
-    assert set(report) == {"ml", "confusion_b", "fairness", "money", "money_inputs", "assumptions", "refusal_sweep"}
+    assert set(report) == {"ml", "confusion_b", "fairness", "money", "money_inputs", "assumptions", "refusal_sweep", "depth"}
+    assert report["depth"]["coverage"]["operating_point"]["macro_f1"] == report["ml"]["macro_f1_b"]
     assert report["ml"]["macro_f1_b"] > report["ml"]["rule_baseline_f1_b"]
     assert len(report["money"]) == 9
     assert {(r["strategy"], r["recovery_rate"]) for r in report["money"]} == {

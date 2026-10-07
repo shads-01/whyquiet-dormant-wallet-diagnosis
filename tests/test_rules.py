@@ -130,3 +130,37 @@ def test_money_table_refusals_cost_zero():
         assert r["users_recovered"] == 0.0
         assert r["cost_bdt"] == 0.0
         assert r["value_bdt"] == 0.0
+
+
+def test_expert_cause_rules_fire_on_their_signal():
+    import pandas as pd
+
+    from src.rules.baseline import expert_cause
+
+    calm = {"cashin_ratio_last4": 1.0, "burst_ratio": 3.0, "district_changed": 0.0, "fail_rate_last6": 0.0}
+    rows = pd.DataFrame([calm, {**calm, "cashin_ratio_last4": 0.1}, {**calm, "burst_ratio": 25.0},
+                         {**calm, "district_changed": 1.0}, {**calm, "fail_rate_last6": 0.5}])
+    assert expert_cause(rows) == ["fee_shock", "job_exit", "solved_problem", "migration", "supply_failure"]
+
+
+def test_best_action_targets_only_when_it_pays():
+    from src.rules.money import best_action, expected_value
+
+    sure = {"job_exit": 0.96, "migration": 0.01, "solved_problem": 0.01, "fee_shock": 0.01, "supply_failure": 0.01}
+    assert best_action(sure, 0.01) == "generic"  # 15 BDT remedy cannot pay back at 1%
+    assert best_action(sure, 0.08) == "job_exit"
+    solved = {**{c: 0.01 for c in EXPECTED_CAUSES}, "solved_problem": 0.96}
+    assert best_action(solved, 0.08) == "none"  # a solved need does not come back, so spend nothing
+    assert expected_value("none", sure, 0.04) == 0.0
+
+
+def test_money_ev_table_counts_and_refusals_spend_nothing():
+    from src.rules.money import money_ev_table
+
+    sure = {c: 0.01 for c in EXPECTED_CAUSES} | {"supply_failure": 0.96}
+    rows = money_ev_table([sure, sure], ["supply_failure", None], ["supply_failure", "job_exit"])
+    assert {(r["strategy"], r["recovery_rate"]) for r in rows} == {
+        (s, r) for s in ("rule", "model", "model_ev", "oracle") for r in (0.01, 0.04, 0.08)}
+    for r in rows:
+        if r["strategy"] in ("model", "model_ev"):
+            assert r["actions"].get("none", 0) >= 1 and r["wallets_actioned"] <= 1  # the refused wallet

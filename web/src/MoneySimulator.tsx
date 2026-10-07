@@ -25,7 +25,7 @@ export default function MoneySimulator({ inputs }: { inputs: MoneyInputs }) {
     <Card className="p-5 sm:p-6 space-y-5" data-testid="simulator-card">
       <div>
         <div className="flex items-center gap-2">
-          <h2 className="t-lg font-bold text-[var(--text)]">5. Recovery-Rate Simulator</h2>
+          <h2 className="t-lg font-bold text-[var(--text)]">10. Recovery-Rate Simulator</h2>
           <Chip tone="warning">ASSUMED</Chip>
         </div>
         <p className="t-xs text-[var(--text-muted)] mt-0.5">

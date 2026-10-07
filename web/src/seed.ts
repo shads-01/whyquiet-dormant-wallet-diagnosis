@@ -59,15 +59,74 @@ export type Report = {
   money_inputs?: MoneyInputs | null; // counts + constants behind `money`; absent in older bundles
   refusal_sweep?: RefusalPoint[]; // every (tau, delta) the tuner searches, scored on population B; absent in older bundles
   assumptions: string[]; // every ASSUMED input, one line each
+  depth?: Depth; // phase 2 evidence from scripts/depth.py (D62-D66); absent in seed.sample.json
 };
 
 export type MoneyRow = {
   recovery_rate: 0.01 | 0.04 | 0.08;
-  strategy: "rule" | "model" | "oracle";
+  strategy: "rule" | "model" | "model_ev" | "oracle";
   wallets_actioned: number;
   users_recovered: number;
   cost_bdt: number;
   value_bdt: number; // users_recovered * ARPU * ramp - cost
+  actions?: Record<string, number>; // money_ev only: wallets per action ("none", "generic" or a cause's remedy)
+};
+
+type CoveragePoint = { coverage: number; macro_f1: number; accuracy: number };
+type ReliabilityBin = { bin: number; confidence: number; accuracy: number; n: number };
+
+export type Depth = {
+  coverage: {
+    lightgbm: CoveragePoint[];
+    logreg: CoveragePoint[];
+    aurc: { lightgbm: number; logreg: number };
+    operating_point: { coverage: number; macro_f1: number };
+  };
+  baselines: { name: string; macro_f1_b: number; coverage: number }[];
+  group_shift: { held_out: string; lightgbm: number; logreg: number }[];
+  macro_f1_b_ci95: [number, number];
+  per_class: { cause: Cause; f1_attributed: number; f1_all: number; refusal_rate: number }[];
+  blended: { group: "clean" | "blended"; n: number; refusal_rate: number; accuracy_attributed: number }[];
+  calibration: {
+    ece_a_test: number;
+    ece_b: number;
+    temperature: number;
+    ece_b_after_temperature: number;
+    reliability_a: ReliabilityBin[];
+    reliability_b: ReliabilityBin[];
+    ece_by_group: { slice: string; group: string; ece: number }[];
+  };
+  label_free: {
+    accuracy: { confidence: number; atc_estimate: number; true: number };
+    accuracy_a_test: { atc_estimate: number; true: number };
+    cause_mix: { cause: Cause; train: number; argmax: number; em: number; true: number }[];
+    cause_mix_max_error: { train: number; argmax: number; em: number };
+    drift: { domain_auc: number; psi: { feature: string; psi: number }[] };
+  };
+  stress: {
+    noise_dial: {
+      level: string;
+      noise: number;
+      blended: number;
+      macro_f1: number;
+      macro_f1_all: number;
+      refusal_rate: number;
+      accuracy_true: number;
+      accuracy_atc: number;
+      confidence: number;
+    }[];
+    unseen_cause: {
+      cause: string;
+      n: number;
+      refusal_rate_novel: number;
+      refusal_rate_known: number;
+      named_as: Record<string, number>;
+      macro_f1_known: number;
+    };
+  };
+  ablation: { group: string; features: string[]; macro_f1_all: number; drop: number; most_hurt: Cause; most_hurt_drop: number }[];
+  money_ev: MoneyRow[];
+  assumptions: string[];
 };
 
 export type MoneyInputs = {
