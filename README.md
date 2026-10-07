@@ -195,7 +195,7 @@ Commands are for bash (Linux, macOS, Git Bash on Windows). PowerShell equivalent
    ```
    This writes `data/train/`, `data/a_test/`, `data/b/`, `truth/` (all gitignored) and overwrites `web/public/seed.json`. Expected last line:
    ```text
-   wrote seed.json: 400 wallets (100 refused), B macro-F1 0.8636
+   wrote seed.json: 400 wallets (100 refused), B macro-F1 0.8781
    ```
    To generate only the synthetic data: `uv run python -m datagen.generate --seed 42`.
 
@@ -340,13 +340,13 @@ Use the live site or `make dev` locally.
 | # | Do this | Expected result |
 | --- | --- | --- |
 | 1 | Open `/` (Triage Queue) | 400 wallets; the verdict filter shows 300 attributed and 100 refused. |
-| 2 | Open `#/w/W-1SVVT9` | **Attributed: Fee Shock**, confidence ≈ 0.99. Top reasons include `weeks_silent` (12) and `ticket_ratio` (0.73, average ticket fell). Remedy: *Cash-out fee waiver voucher*, 25 BDT (ASSUMED), English and Bengali copy. Rule column: "message everyone". |
-| 3 | Open `#/w/W-N0S673` | **Attributed: Supply Failure**, ≈ 1.00. Top reason `fail_last6` = 5 failed cash-outs in the last 6 active weeks. Remedy: *Agent liquidity alert & routing*, 5 BDT. |
-| 4 | Open `#/w/W-YF15RF` | **Attributed: Migration**, ≈ 0.95. Top reason `weeks_since_district_change` = 3. |
-| 5 | Open `#/w/W-1JRE6D` | **Refused.** "No attributable cause. I will not spend your money here." Reason: *Top cause fee_shock 0.45 is below the 0.80 bar (tau)*. No action buttons. |
-| 6 | Open `#/w/W-06VLT1` | **Refused** with both tests failing: the τ reason and *fee_shock vs solved_problem margin … is below 0.10 (delta)*. |
+| 2 | Open `#/w/W-X9VJVP` | **Attributed: Fee Shock**, confidence ≈ 1.00. Top reasons include `weeks_silent` (12) and `ticket_ratio` (0.70, average ticket fell). Remedy: *Cash-out fee waiver voucher*, 25 BDT (ASSUMED), English and Bengali copy. Rule column: "message everyone". |
+| 3 | Open `#/w/W-8SQUTJ` | **Attributed: Supply Failure**, 0.99. Top reason `fail_last6` = 7 failed cash-outs in the last 6 active weeks. Remedy: *Agent liquidity alert & routing*, 5 BDT. |
+| 4 | Open `#/w/W-R5X4FA` | **Attributed: Migration**, ≈ 1.00. Top reason `weeks_since_district_change` = 3. |
+| 5 | Open `#/w/W-1JRE6D` | **Refused.** "No attributable cause. I will not spend your money here." Reason: *Top cause fee_shock 0.45 is below the 0.85 bar (tau)*. No action buttons. |
+| 6 | Open `#/w/W-IUDR57` | **Refused** with both tests failing: the τ reason and *supply_failure vs job_exit margin 0.01 … is below 0.10 (delta)*. |
 | 7 | In the Queue's Quick Wallet Diagnostic, type `W-123` | Validation error: *Wallet ID must follow format W-XXXXXX*. |
-| 8 | Open `#/evidence` | Macro-F1 on B 86.4%, A-test 96.2%, refusal 21.7% on B, rule baseline 8.2%, shuffled control 16.2%, best single feature `cashin_ratio_last4` 37.3%. Switch recovery rate 1% / 4% / 8% to see the money table change. |
+| 8 | Open `#/evidence` | Macro-F1 on B 87.8%, A-test 96.8%, refusal 26.5% on B, rule baseline 8.2%, shuffled control 16.2%, best single feature `cashin_ratio_last4` 37.3%. Switch recovery rate 1% / 4% / 8% to see the money table change. |
 
 **API checks without Supabase** (empty `.env`, API running locally):
 ```bash
@@ -439,39 +439,39 @@ Each wallet gets 52 weeks of weekly rows (`txn_count`, `amount_bdt`, `cashin_cou
 
 **Model.** 20 hand-built shape features per wallet (`src/model/features.py`), each measured against the wallet's *own* earlier baseline so they survive population B's lower activity: e.g. `last4_txn_ratio`, `slope_last8`, `cashin_ratio_last4`, `weeks_since_district_change`, `app_share_shift`, `burst_ratio`, `post_fee_ratio`, `fail_last6`, `fail_rate_last6`, `fade_weeks`. A LightGBM multiclass model (balanced class weights) maps them to five cause probabilities; `decide()` applies the τ/δ refusal rule.
 
-**Why AI beats a simple rule here.** The incumbent rule (`weeks_silent ≥ 3 → message everyone`) fires on every dormant wallet and cannot name a cause at all. Five causes leave overlapping, noisy traces across several signals at once (cash-ins, failures, district, ticket size, timing relative to the fee week), and blends and stray clues make single thresholds brittle. The numbers below show it: the best *single* feature reaches 37.3% macro-F1 on B; the full model reaches 86.4% on the wallets it attributes.
+**Why AI beats a simple rule here.** The incumbent rule (`weeks_silent ≥ 3 → message everyone`) fires on every dormant wallet and cannot name a cause at all. Five causes leave overlapping, noisy traces across several signals at once (cash-ins, failures, district, ticket size, timing relative to the fee week), and blends and stray clues make single thresholds brittle. The numbers below show it: the best *single* feature reaches 37.3% macro-F1 on B; the full model reaches 87.8% on the wallets it attributes.
 
 **Results** (seed 42, from `web/public/seed.json`, reproduced by `scripts/evaluate.py --seed 42`). Headline is **population B only**.
 
 | Metric | Value |
 | --- | --- |
-| **Macro-F1, population B (attributed wallets)** | **0.864** |
-| Macro-F1, A-test (in-distribution) | 0.962 |
-| Gap A-test − B | 0.098 |
-| Refusal rate A-test / B | 9.3% / 21.7% (refuses more under shift, as intended) |
+| **Macro-F1, population B (attributed wallets)** | **0.878** |
+| Macro-F1, A-test (in-distribution) | 0.968 |
+| Gap A-test − B | 0.090 |
+| Refusal rate A-test / B | 12.3% / 26.5% (refuses more under shift, as intended) |
 | Expected calibration error on B (10 bins) | 0.100 |
 | Rule baseline macro-F1 on B (majority cause of A-train for all wallets) | 0.082 |
 | Shuffled-label control on B | 0.162 (chance ≈ 0.20) |
 | Best single feature on B (`cashin_ratio_last4`) | 0.373 |
 | Seeds 1, 2, 3 (stability check, D33 in `docs/DECISIONS.md` / `docs/STATE.md`) | B macro-F1 mean 0.868, range 0.847–0.886 |
 
-How to read this fairly: the model's F1 counts only the 78.3% of B wallets it attributes; the controls cannot refuse and are scored on all of B. Refusal is the price of the higher accuracy, and it is reported next to it.
+How to read this fairly: the model's F1 counts only the 73.5% of B wallets it attributes; the controls cannot refuse and are scored on all of B. Refusal is the price of the higher accuracy, and it is reported next to it. Thresholds are value-tuned under the 0.97 accuracy floor (D72): tau 0.85, delta 0.10.
 
 **Economic Recovery & Price-Aware Routing** (`src/rules/money.py`, `src/rules/routing.py`, all of population B, 3,000 wallets; every input ASSUMED: ARPU 120 BDT/month, 3-month value ramp, generic SMS 0.50 BDT and 25% as effective as a targeted remedy, cause-specific targeted remedies: `supply_failure` 5 BDT, `migration` 10 BDT, `job_exit` 15 BDT, `fee_shock` 25 BDT, `solved_problem` 0 BDT; break-even rates 1.39%, 2.78%, 4.17%, 6.94%):
 
 | Recovery rate | Rule (SMS everyone) net BDT | Unrouted Model net BDT | WhyQuiet Routed net BDT | Oracle net BDT |
 | --- | ---: | ---: | ---: | ---: |
-| 1% | +1,200.00 | −20,606.50 | +1,010.80* | −19,945.00 |
-| 4% | +9,300.00 | −2,341.00 | +10,125.10 | +305.00 |
-| 8% | +20,100.00 | +22,013.00 | +28,999.50 | +27,305.00 |
+| 1% | +1,200.00 | −19,255.60 | +1,022.80* | −18,683.20 |
+| 4% | +9,300.00 | −1,932.40 | +10,129.80 | +357.20 |
+| 8% | +20,100.00 | +21,165.20 | +28,756.90 | +25,744.40 |
 
 *\*At 1% recovery, blanket SMS also credits completed-lifecycle (`solved_problem`) wallets; like-for-like on actionable wallets, routed matches blanket.*
 
 **Headline takeaways:**
 1. **Never worse than blanket SMS like-for-like**: Cause break-even thresholds range from 1.39% (`supply_failure`) to 6.94% (`fee_shock`). Price-aware routing dynamically falls back to blanket SMS whenever expected remedy value is non-superior.
-2. **At 4% recovery, routed beats blanket by +8.9%** (+10,125.10 BDT vs. +9,300.00 BDT net value); **at 8% by +44.3%** (+28,999.50 BDT vs. +20,100.00 BDT net value) on Population B (simulation, ASSUMED inputs).
-3. **Upay Scale Projection** (ASSUMED: Upay cause mix = synthetic population B; base ~7M stale late 2022; Bangladesh Bank industry inactive share 63.57% as of Feb 2025 yielding 4,449,933 dormant wallets, 1.0x cost scale): central scenario routed net value is **+1.50M BDT at 1%** (matches blanket like-for-like), **+15.02M BDT at 4%** (+1.22M BDT advantage over blanket SMS), and **+43.02M BDT at 8%** (+13.20M BDT advantage over blanket SMS).
-4. **Refusal reframe**: Calibrated refusal routes 652 ambiguous wallets to the cheap blanket message instead of a costly targeted remedy; avoided targeted spend = 9,170 BDT (8,844 BDT net of blanket SMS; recomputed under per-cause costs).
+2. **At 4% recovery, routed beats blanket by +8.9%** (+10,129.80 BDT vs. +9,300.00 BDT net value); **at 8% by +43.1%** (+28,756.90 BDT vs. +20,100.00 BDT net value) on Population B (simulation, ASSUMED inputs).
+3. **Upay Scale Projection** (ASSUMED: Upay cause mix = synthetic population B; base ~7M stale late 2022; Bangladesh Bank industry inactive share 63.57% as of Feb 2025 yielding 4,449,933 dormant wallets, 1.0x cost scale): central scenario routed net value is **+1.52M BDT at 1%** (−0.26M BDT vs blanket: at a 1% response nothing beats the blanket message), **+15.03M BDT at 4%** (+1.23M BDT advantage over blanket SMS), and **+42.66M BDT at 8%** (+12.84M BDT advantage over blanket SMS).
+4. **Refusal reframe**: Calibrated refusal routes 794 ambiguous wallets to the cheap blanket message instead of a costly targeted remedy; avoided targeted spend = 10,835 BDT (10,438 BDT net of blanket SMS; recomputed under per-cause costs).
 5. **Not yet measured in production**: Proposed 2-week pilot protocol (`docs/PILOT_PROTOCOL.md`), $n=424$ wallets per arm (1,272 total across 3 arms) from `scripts/pilot_sample_size.py` at 4% benchmark, with pre-registered stop rule = per-cause break-even rate $r^* = \text{cost} / 360\text{ BDT}$.
 
 ---
@@ -480,22 +480,22 @@ How to read this fairly: the model's F1 counts only the 78.3% of B wallets it at
 
 **Explainability**
 - Every wallet shows its full 5-cause posterior and its top 8 signed feature contributions (LightGBM tree-SHAP values via `pred_contrib`), with each feature's actual value.
-- Refusals list the exact failed test in plain words, e.g. *"Top cause fee_shock 0.45 is below the 0.80 bar (tau)"*. Refusal is a normal output with reasons, never an exception.
+- Refusals list the exact failed test in plain words, e.g. *"Top cause fee_shock 0.45 is below the 0.85 bar (tau)"*. Refusal is a normal output with reasons, never an exception.
 - Every assumed number is labelled ASSUMED in code and on the Evidence screen.
 
 **Fairness checks** (population B, from `scripts/evaluate.py`)
 
 | Slice | Group | n | Macro-F1 | Refusal rate |
 | --- | --- | ---: | ---: | ---: |
-| Worker type | domestic | 765 | 0.876 | 23.8% |
-| | garment | 698 | 0.891 | 21.8% |
-| | retail | 554 | 0.849 | 17.9% |
-| | transport | 983 | 0.842 | 22.3% |
-| Pay cycle | biweekly | 586 | 0.880 | 21.0% |
-| | monthly | 1,824 | 0.856 | 23.2% |
-| | weekly | 590 | 0.864 | 18.0% |
+| Worker type | domestic | 765 | 0.886 | 28.1% |
+| | garment | 698 | 0.898 | 26.8% |
+| | retail | 554 | 0.870 | 22.7% |
+| | transport | 983 | 0.861 | 27.1% |
+| Pay cycle | biweekly | 586 | 0.907 | 27.0% |
+| | monthly | 1,824 | 0.869 | 27.6% |
+| | weekly | 590 | 0.871 | 22.5% |
 
-Macro-F1 stays within 0.84–0.89 across occupation groups and pay cycles. Limits: the synthetic data has no gender, age or region attributes, so this is a check across occupation and income rhythm only, and it is on simulated wallets.
+Macro-F1 stays within 0.86–0.91 across occupation groups and pay cycles. Limits: the synthetic data has no gender, age or region attributes, so this is a check across occupation and income rhythm only, and it is on simulated wallets.
 
 **Security**
 - **Prompt injection:** not applicable; there is no LLM and no free-text model input. All decision logic is deterministic code.

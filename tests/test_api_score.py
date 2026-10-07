@@ -44,7 +44,7 @@ def test_live_scores_match_seed_json_for_the_sample_ledger():
     r = client.post("/api/score", json=ledger_request(), headers=KEY)
     assert r.status_code == 200
     body = r.json()
-    assert body["model_version"] == "lgbm-v1" and body["tau"] == 0.8
+    assert body["model_version"] == "lgbm-v1" and body["tau"] == 0.85
     results = body["results"]
     assert len(results) == 20 and {x["verdict"] for x in results} == {"attributed", "refused"}
     for x in results:

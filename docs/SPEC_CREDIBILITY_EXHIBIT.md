@@ -4,18 +4,18 @@ This spec proposes a refusal validity audit and a falsifiability exhibit so that
 
 Executor: Gemini 3.7 Flash. Reviewer: Shads. Verified pre-checks (2026-10-07, seed 42) are included as expected values; if your run differs by more than rounding, STOP and report.
 
-## Verified evidence (pre-checks already run)
+## Verified evidence (pre-checks 2026-10-07; refreshed after the D72 threshold re-tune, seed 42)
 
-| Quantity | Measured value (seed 42) |
+| Quantity | Measured value (seed 42, current export) |
 | --- | --- |
-| tau / delta | 0.80 / 0.10 |
-| Refusal rate, ground-truth blended wallets (n=902) | 0.326 |
-| Refusal rate, clean wallets (n=2098) | 0.171 |
-| Enrichment ratio | 1.91 |
-| Forced-choice top-1 error among refused wallets | 0.491 |
-| Forced-choice top-1 error among attributed wallets | 0.135 |
+| tau / delta | 0.85 / 0.10 (D72) |
+| Refusal rate, ground-truth blended wallets | 0.402 |
+| Refusal rate, clean wallets | 0.205 |
+| Enrichment ratio | 1.96 |
+| Forced-choice top-1 error among refused wallets | 0.467 |
+| Forced-choice top-1 error among attributed wallets | 0.121 |
 
-Thresholds 2.0 (enrichment) and 1.3 (failure floor) are ASSUMED pre-registered bars, not facts. Measured 1.91 sits between them; ship the numbers as-is with both bars shown — no retuning, no threshold shopping.
+Pre-D72 values (for history): tau/delta 0.80/0.10, blended 0.326 vs clean 0.171, enrichment 1.91, forced error 0.491/0.135. Thresholds 2.0 (enrichment) and 1.3 (failure floor) are ASSUMED pre-registered bars, not facts; measured enrichment sits between them — ship the numbers as-is with both bars shown, no retuning, no threshold shopping.
 
 ## Goals
 

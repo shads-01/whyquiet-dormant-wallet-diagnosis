@@ -33,10 +33,10 @@ test.describe("Score a Ledger File", () => {
     await page.getByTestId("score-sample-btn").click();
 
     await expect(page.getByTestId("score-results")).toContainText("20 wallets scored");
-    await expect(page.getByTestId("score-results")).toContainText("14 attributed");
-    await expect(page.getByTestId("score-results")).toContainText("6 refused");
+    await expect(page.getByTestId("score-results")).toContainText("16 attributed");
+    await expect(page.getByTestId("score-results")).toContainText("4 refused");
     await expect(page.getByTestId("score-table").locator("tbody tr")).toHaveCount(20);
-    await expect(page.getByTestId("score-table")).toContainText("below the 0.80 bar");
+    await expect(page.getByTestId("score-table")).toContainText("below the 0.85 bar");
     expect(auth).toEqual(["Bearer e2e-token"]);
   });
 

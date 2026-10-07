@@ -3922,17 +3922,17 @@
       "best_single_feature_f1_b": 0.384,
       "rule_baseline_f1_b": 0.221,
       "refusal_validity": {
-        "refusal_rate_blended": 0.3259,
-        "refusal_rate_clean": 0.1706,
-        "enrichment_ratio": 1.9101,
-        "forced_error_refused": 0.4908,
-        "forced_error_attributed": 0.135
+        "refusal_rate_blended": 0.402,
+        "refusal_rate_clean": 0.205,
+        "enrichment_ratio": 1.959,
+        "forced_error_refused": 0.467,
+        "forced_error_attributed": 0.121
       },
-      "verdict_flip_rate": 0.2107
+      "verdict_flip_rate": 0.199
     },
     "population_c": {
-      "macro_f1": 0.7513,
-      "refusal_rate": 0.2233,
+      "macro_f1": 0.766,
+      "refusal_rate": 0.269,
       "n_wallets": 3000
     },
     "pilot": {

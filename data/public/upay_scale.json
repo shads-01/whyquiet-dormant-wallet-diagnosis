@@ -94,13 +94,13 @@
       "recovery_rate": 0.01,
       "cost_scale": 0.5,
       "rule_net_value_per_wallet_bdt": 0.4,
-      "model_net_value_per_wallet_bdt": -2.4197,
-      "routed_net_value_per_wallet_bdt": 0.3958,
+      "model_net_value_per_wallet_bdt": -2.2469,
+      "routed_net_value_per_wallet_bdt": 0.3987,
       "rule_total_net_value_bdt": 1400000.0,
-      "model_total_net_value_bdt": -8468833.33,
-      "routed_total_net_value_bdt": 1385300.0,
-      "model_minus_rule_bdt": -9868833.33,
-      "routed_minus_rule_bdt": -14700.0
+      "model_total_net_value_bdt": -7864033.33,
+      "routed_total_net_value_bdt": 1395333.33,
+      "model_minus_rule_bdt": -9264033.33,
+      "routed_minus_rule_bdt": -4666.67
     },
     {
       "scenario": "Conservative (50%)",
@@ -109,13 +109,13 @@
       "recovery_rate": 0.01,
       "cost_scale": 1.0,
       "rule_net_value_per_wallet_bdt": 0.4,
-      "model_net_value_per_wallet_bdt": -6.8688,
-      "routed_net_value_per_wallet_bdt": 0.3369,
+      "model_net_value_per_wallet_bdt": -6.4185,
+      "routed_net_value_per_wallet_bdt": 0.3409,
       "rule_total_net_value_bdt": 1400000.0,
-      "model_total_net_value_bdt": -24040916.67,
-      "routed_total_net_value_bdt": 1179266.67,
-      "model_minus_rule_bdt": -25440916.67,
-      "routed_minus_rule_bdt": -220733.33
+      "model_total_net_value_bdt": -22464866.67,
+      "routed_total_net_value_bdt": 1193266.67,
+      "model_minus_rule_bdt": -23864866.67,
+      "routed_minus_rule_bdt": -206733.33
     },
     {
       "scenario": "Conservative (50%)",
@@ -124,13 +124,13 @@
       "recovery_rate": 0.01,
       "cost_scale": 1.5,
       "rule_net_value_per_wallet_bdt": 0.4,
-      "model_net_value_per_wallet_bdt": -11.318,
-      "routed_net_value_per_wallet_bdt": 0.3369,
+      "model_net_value_per_wallet_bdt": -10.5902,
+      "routed_net_value_per_wallet_bdt": 0.3409,
       "rule_total_net_value_bdt": 1400000.0,
-      "model_total_net_value_bdt": -39613000.0,
-      "routed_total_net_value_bdt": 1179266.67,
-      "model_minus_rule_bdt": -41013000.0,
-      "routed_minus_rule_bdt": -220733.33
+      "model_total_net_value_bdt": -37065700.0,
+      "routed_total_net_value_bdt": 1193266.67,
+      "model_minus_rule_bdt": -38465700.0,
+      "routed_minus_rule_bdt": -206733.33
     },
     {
       "scenario": "Conservative (50%)",
@@ -139,13 +139,13 @@
       "recovery_rate": 0.04,
       "cost_scale": 0.5,
       "rule_net_value_per_wallet_bdt": 3.1,
-      "model_net_value_per_wallet_bdt": 3.6688,
-      "routed_net_value_per_wallet_bdt": 4.7422,
+      "model_net_value_per_wallet_bdt": 3.5275,
+      "routed_net_value_per_wallet_bdt": 4.6924,
       "rule_total_net_value_bdt": 10850000.0,
-      "model_total_net_value_bdt": 12840916.67,
-      "routed_total_net_value_bdt": 16597583.33,
-      "model_minus_rule_bdt": 1990916.67,
-      "routed_minus_rule_bdt": 5747583.33
+      "model_total_net_value_bdt": 12346366.67,
+      "routed_total_net_value_bdt": 16423400.0,
+      "model_minus_rule_bdt": 1496366.67,
+      "routed_minus_rule_bdt": 5573400.0
     },
     {
       "scenario": "Conservative (50%)",
@@ -154,13 +154,13 @@
       "recovery_rate": 0.04,
       "cost_scale": 1.0,
       "rule_net_value_per_wallet_bdt": 3.1,
-      "model_net_value_per_wallet_bdt": -0.7803,
-      "routed_net_value_per_wallet_bdt": 3.375,
+      "model_net_value_per_wallet_bdt": -0.6441,
+      "routed_net_value_per_wallet_bdt": 3.3766,
       "rule_total_net_value_bdt": 10850000.0,
-      "model_total_net_value_bdt": -2731166.67,
-      "routed_total_net_value_bdt": 11812616.67,
-      "model_minus_rule_bdt": -13581166.67,
-      "routed_minus_rule_bdt": 962616.67
+      "model_total_net_value_bdt": -2254466.67,
+      "routed_total_net_value_bdt": 11818100.0,
+      "model_minus_rule_bdt": -13104466.67,
+      "routed_minus_rule_bdt": 968100.0
     },
     {
       "scenario": "Conservative (50%)",
@@ -169,13 +169,13 @@
       "recovery_rate": 0.04,
       "cost_scale": 1.5,
       "rule_net_value_per_wallet_bdt": 3.1,
-      "model_net_value_per_wallet_bdt": -5.2295,
-      "routed_net_value_per_wallet_bdt": 2.9874,
+      "model_net_value_per_wallet_bdt": -4.8158,
+      "routed_net_value_per_wallet_bdt": 3.0045,
       "rule_total_net_value_bdt": 10850000.0,
-      "model_total_net_value_bdt": -18303250.0,
-      "routed_total_net_value_bdt": 10455783.33,
-      "model_minus_rule_bdt": -29153250.0,
-      "routed_minus_rule_bdt": -394216.67
+      "model_total_net_value_bdt": -16855300.0,
+      "routed_total_net_value_bdt": 10515750.0,
+      "model_minus_rule_bdt": -27705300.0,
+      "routed_minus_rule_bdt": -334250.0
     },
     {
       "scenario": "Conservative (50%)",
@@ -184,13 +184,13 @@
       "recovery_rate": 0.08,
       "cost_scale": 0.5,
       "rule_net_value_per_wallet_bdt": 6.7,
-      "model_net_value_per_wallet_bdt": 11.7868,
-      "routed_net_value_per_wallet_bdt": 13.243,
+      "model_net_value_per_wallet_bdt": 11.2267,
+      "routed_net_value_per_wallet_bdt": 13.0,
       "rule_total_net_value_bdt": 23450000.0,
-      "model_total_net_value_bdt": 41253916.67,
-      "routed_total_net_value_bdt": 46350383.33,
-      "model_minus_rule_bdt": 17803916.67,
-      "routed_minus_rule_bdt": 22900383.33
+      "model_total_net_value_bdt": 39293566.67,
+      "routed_total_net_value_bdt": 45500000.0,
+      "model_minus_rule_bdt": 15843566.67,
+      "routed_minus_rule_bdt": 22050000.0
     },
     {
       "scenario": "Conservative (50%)",
@@ -199,13 +199,13 @@
       "recovery_rate": 0.08,
       "cost_scale": 1.0,
       "rule_net_value_per_wallet_bdt": 6.7,
-      "model_net_value_per_wallet_bdt": 7.3377,
-      "routed_net_value_per_wallet_bdt": 9.6665,
+      "model_net_value_per_wallet_bdt": 7.0551,
+      "routed_net_value_per_wallet_bdt": 9.5856,
       "rule_total_net_value_bdt": 23450000.0,
-      "model_total_net_value_bdt": 25681833.33,
-      "routed_total_net_value_bdt": 33832750.0,
-      "model_minus_rule_bdt": 2231833.33,
-      "routed_minus_rule_bdt": 10382750.0
+      "model_total_net_value_bdt": 24692733.33,
+      "routed_total_net_value_bdt": 33549716.67,
+      "model_minus_rule_bdt": 1242733.33,
+      "routed_minus_rule_bdt": 10099716.67
     },
     {
       "scenario": "Conservative (50%)",
@@ -214,13 +214,13 @@
       "recovery_rate": 0.08,
       "cost_scale": 1.5,
       "rule_net_value_per_wallet_bdt": 6.7,
-      "model_net_value_per_wallet_bdt": 2.8885,
-      "routed_net_value_per_wallet_bdt": 7.9386,
+      "model_net_value_per_wallet_bdt": 2.8834,
+      "routed_net_value_per_wallet_bdt": 7.9175,
       "rule_total_net_value_bdt": 23450000.0,
-      "model_total_net_value_bdt": 10109750.0,
-      "routed_total_net_value_bdt": 27784983.33,
-      "model_minus_rule_bdt": -13340250.0,
-      "routed_minus_rule_bdt": 4334983.33
+      "model_total_net_value_bdt": 10091900.0,
+      "routed_total_net_value_bdt": 27711366.67,
+      "model_minus_rule_bdt": -13358100.0,
+      "routed_minus_rule_bdt": 4261366.67
     },
     {
       "scenario": "Industry Central (63.57%)",
@@ -229,13 +229,13 @@
       "recovery_rate": 0.01,
       "cost_scale": 0.5,
       "rule_net_value_per_wallet_bdt": 0.4,
-      "model_net_value_per_wallet_bdt": -2.4197,
-      "routed_net_value_per_wallet_bdt": 0.3958,
+      "model_net_value_per_wallet_bdt": -2.2469,
+      "routed_net_value_per_wallet_bdt": 0.3987,
       "rule_total_net_value_bdt": 1779973.2,
-      "model_total_net_value_bdt": -10767354.55,
-      "routed_total_net_value_bdt": 1761283.48,
-      "model_minus_rule_bdt": -12547327.75,
-      "routed_minus_rule_bdt": -18689.72
+      "model_total_net_value_bdt": -9998406.13,
+      "routed_total_net_value_bdt": 1774039.96,
+      "model_minus_rule_bdt": -11778379.33,
+      "routed_minus_rule_bdt": -5933.24
     },
     {
       "scenario": "Industry Central (63.57%)",
@@ -244,13 +244,13 @@
       "recovery_rate": 0.01,
       "cost_scale": 1.0,
       "rule_net_value_per_wallet_bdt": 0.4,
-      "model_net_value_per_wallet_bdt": -6.8688,
-      "routed_net_value_per_wallet_bdt": 0.3369,
+      "model_net_value_per_wallet_bdt": -6.4185,
+      "routed_net_value_per_wallet_bdt": 0.3409,
       "rule_total_net_value_bdt": 1779973.2,
-      "model_total_net_value_bdt": -30565848.12,
-      "routed_total_net_value_bdt": 1499330.76,
-      "model_minus_rule_bdt": -32345821.32,
-      "routed_minus_rule_bdt": -280642.44
+      "model_total_net_value_bdt": -28562043.29,
+      "routed_total_net_value_bdt": 1517130.49,
+      "model_minus_rule_bdt": -30342016.49,
+      "routed_minus_rule_bdt": -262842.71
     },
     {
       "scenario": "Industry Central (63.57%)",
@@ -259,13 +259,13 @@
       "recovery_rate": 0.01,
       "cost_scale": 1.5,
       "rule_net_value_per_wallet_bdt": 0.4,
-      "model_net_value_per_wallet_bdt": -11.318,
-      "routed_net_value_per_wallet_bdt": 0.3369,
+      "model_net_value_per_wallet_bdt": -10.5902,
+      "routed_net_value_per_wallet_bdt": 0.3409,
       "rule_total_net_value_bdt": 1779973.2,
-      "model_total_net_value_bdt": -50364341.69,
-      "routed_total_net_value_bdt": 1499330.76,
-      "model_minus_rule_bdt": -52144314.89,
-      "routed_minus_rule_bdt": -280642.44
+      "model_total_net_value_bdt": -47125680.46,
+      "routed_total_net_value_bdt": 1517130.49,
+      "model_minus_rule_bdt": -48905653.66,
+      "routed_minus_rule_bdt": -262842.71
     },
     {
       "scenario": "Industry Central (63.57%)",
@@ -274,13 +274,13 @@
       "recovery_rate": 0.04,
       "cost_scale": 0.5,
       "rule_net_value_per_wallet_bdt": 3.1,
-      "model_net_value_per_wallet_bdt": 3.6688,
-      "routed_net_value_per_wallet_bdt": 4.7422,
+      "model_net_value_per_wallet_bdt": 3.5275,
+      "routed_net_value_per_wallet_bdt": 4.6924,
       "rule_total_net_value_bdt": 13794792.3,
-      "model_total_net_value_bdt": 16326062.52,
-      "routed_total_net_value_bdt": 21102323.94,
-      "model_minus_rule_bdt": 2531270.22,
-      "routed_minus_rule_bdt": 7307531.64
+      "model_total_net_value_bdt": 15697286.99,
+      "routed_total_net_value_bdt": 20880865.61,
+      "model_minus_rule_bdt": 1902494.69,
+      "routed_minus_rule_bdt": 7086073.31
     },
     {
       "scenario": "Industry Central (63.57%)",
@@ -289,13 +289,13 @@
       "recovery_rate": 0.04,
       "cost_scale": 1.0,
       "rule_net_value_per_wallet_bdt": 3.1,
-      "model_net_value_per_wallet_bdt": -0.7803,
-      "routed_net_value_per_wallet_bdt": 3.375,
+      "model_net_value_per_wallet_bdt": -0.6441,
+      "routed_net_value_per_wallet_bdt": 3.3766,
       "rule_total_net_value_bdt": 13794792.3,
-      "model_total_net_value_bdt": -3472431.05,
-      "routed_total_net_value_bdt": 15018672.21,
-      "model_minus_rule_bdt": -17267223.35,
-      "routed_minus_rule_bdt": 1223879.91
+      "model_total_net_value_bdt": -2866350.18,
+      "routed_total_net_value_bdt": 15025643.77,
+      "model_minus_rule_bdt": -16661142.48,
+      "routed_minus_rule_bdt": 1230851.47
     },
     {
       "scenario": "Industry Central (63.57%)",
@@ -304,13 +304,13 @@
       "recovery_rate": 0.04,
       "cost_scale": 1.5,
       "rule_net_value_per_wallet_bdt": 3.1,
-      "model_net_value_per_wallet_bdt": -5.2295,
-      "routed_net_value_per_wallet_bdt": 2.9874,
+      "model_net_value_per_wallet_bdt": -4.8158,
+      "routed_net_value_per_wallet_bdt": 3.0045,
       "rule_total_net_value_bdt": 13794792.3,
-      "model_total_net_value_bdt": -23270924.62,
-      "routed_total_net_value_bdt": 13293581.51,
-      "model_minus_rule_bdt": -37065716.92,
-      "routed_minus_rule_bdt": -501210.79
+      "model_total_net_value_bdt": -21429987.34,
+      "routed_total_net_value_bdt": 13369823.7,
+      "model_minus_rule_bdt": -35224779.64,
+      "routed_minus_rule_bdt": -424968.6
     },
     {
       "scenario": "Industry Central (63.57%)",
@@ -319,13 +319,13 @@
       "recovery_rate": 0.08,
       "cost_scale": 0.5,
       "rule_net_value_per_wallet_bdt": 6.7,
-      "model_net_value_per_wallet_bdt": 11.7868,
-      "routed_net_value_per_wallet_bdt": 13.243,
+      "model_net_value_per_wallet_bdt": 11.2267,
+      "routed_net_value_per_wallet_bdt": 13.0,
       "rule_total_net_value_bdt": 29814551.1,
-      "model_total_net_value_bdt": 52450618.62,
-      "routed_total_net_value_bdt": 58930314.39,
-      "model_minus_rule_bdt": 22636067.52,
-      "routed_minus_rule_bdt": 29115763.29
+      "model_total_net_value_bdt": 49958211.14,
+      "routed_total_net_value_bdt": 57849129.0,
+      "model_minus_rule_bdt": 20143660.04,
+      "routed_minus_rule_bdt": 28034577.9
     },
     {
       "scenario": "Industry Central (63.57%)",
@@ -334,13 +334,13 @@
       "recovery_rate": 0.08,
       "cost_scale": 1.0,
       "rule_net_value_per_wallet_bdt": 6.7,
-      "model_net_value_per_wallet_bdt": 7.3377,
-      "routed_net_value_per_wallet_bdt": 9.6665,
+      "model_net_value_per_wallet_bdt": 7.0551,
+      "routed_net_value_per_wallet_bdt": 9.5856,
       "rule_total_net_value_bdt": 29814551.1,
-      "model_total_net_value_bdt": 32652125.04,
-      "routed_total_net_value_bdt": 43015277.34,
-      "model_minus_rule_bdt": 2837573.94,
-      "routed_minus_rule_bdt": 13200726.24
+      "model_total_net_value_bdt": 31394573.98,
+      "routed_total_net_value_bdt": 42655426.1,
+      "model_minus_rule_bdt": 1580022.88,
+      "routed_minus_rule_bdt": 12840875.0
     },
     {
       "scenario": "Industry Central (63.57%)",
@@ -349,13 +349,13 @@
       "recovery_rate": 0.08,
       "cost_scale": 1.5,
       "rule_net_value_per_wallet_bdt": 6.7,
-      "model_net_value_per_wallet_bdt": 2.8885,
-      "routed_net_value_per_wallet_bdt": 7.9386,
+      "model_net_value_per_wallet_bdt": 2.8834,
+      "routed_net_value_per_wallet_bdt": 7.9175,
       "rule_total_net_value_bdt": 29814551.1,
-      "model_total_net_value_bdt": 12853631.47,
-      "routed_total_net_value_bdt": 35326089.78,
-      "model_minus_rule_bdt": -16960919.63,
-      "routed_minus_rule_bdt": 5511538.68
+      "model_total_net_value_bdt": 12830936.81,
+      "routed_total_net_value_bdt": 35232492.86,
+      "model_minus_rule_bdt": -16983614.29,
+      "routed_minus_rule_bdt": 5417941.76
     },
     {
       "scenario": "Aggressive (75%)",
@@ -364,13 +364,13 @@
       "recovery_rate": 0.01,
       "cost_scale": 0.5,
       "rule_net_value_per_wallet_bdt": 0.4,
-      "model_net_value_per_wallet_bdt": -2.4197,
-      "routed_net_value_per_wallet_bdt": 0.3958,
+      "model_net_value_per_wallet_bdt": -2.2469,
+      "routed_net_value_per_wallet_bdt": 0.3987,
       "rule_total_net_value_bdt": 2100000.0,
-      "model_total_net_value_bdt": -12703250.0,
-      "routed_total_net_value_bdt": 2077950.0,
-      "model_minus_rule_bdt": -14803250.0,
-      "routed_minus_rule_bdt": -22050.0
+      "model_total_net_value_bdt": -11796050.0,
+      "routed_total_net_value_bdt": 2093000.0,
+      "model_minus_rule_bdt": -13896050.0,
+      "routed_minus_rule_bdt": -7000.0
     },
     {
       "scenario": "Aggressive (75%)",
@@ -379,13 +379,13 @@
       "recovery_rate": 0.01,
       "cost_scale": 1.0,
       "rule_net_value_per_wallet_bdt": 0.4,
-      "model_net_value_per_wallet_bdt": -6.8688,
-      "routed_net_value_per_wallet_bdt": 0.3369,
+      "model_net_value_per_wallet_bdt": -6.4185,
+      "routed_net_value_per_wallet_bdt": 0.3409,
       "rule_total_net_value_bdt": 2100000.0,
-      "model_total_net_value_bdt": -36061375.0,
-      "routed_total_net_value_bdt": 1768900.0,
-      "model_minus_rule_bdt": -38161375.0,
-      "routed_minus_rule_bdt": -331100.0
+      "model_total_net_value_bdt": -33697300.0,
+      "routed_total_net_value_bdt": 1789900.0,
+      "model_minus_rule_bdt": -35797300.0,
+      "routed_minus_rule_bdt": -310100.0
     },
     {
       "scenario": "Aggressive (75%)",
@@ -394,13 +394,13 @@
       "recovery_rate": 0.01,
       "cost_scale": 1.5,
       "rule_net_value_per_wallet_bdt": 0.4,
-      "model_net_value_per_wallet_bdt": -11.318,
-      "routed_net_value_per_wallet_bdt": 0.3369,
+      "model_net_value_per_wallet_bdt": -10.5902,
+      "routed_net_value_per_wallet_bdt": 0.3409,
       "rule_total_net_value_bdt": 2100000.0,
-      "model_total_net_value_bdt": -59419500.0,
-      "routed_total_net_value_bdt": 1768900.0,
-      "model_minus_rule_bdt": -61519500.0,
-      "routed_minus_rule_bdt": -331100.0
+      "model_total_net_value_bdt": -55598550.0,
+      "routed_total_net_value_bdt": 1789900.0,
+      "model_minus_rule_bdt": -57698550.0,
+      "routed_minus_rule_bdt": -310100.0
     },
     {
       "scenario": "Aggressive (75%)",
@@ -409,13 +409,13 @@
       "recovery_rate": 0.04,
       "cost_scale": 0.5,
       "rule_net_value_per_wallet_bdt": 3.1,
-      "model_net_value_per_wallet_bdt": 3.6688,
-      "routed_net_value_per_wallet_bdt": 4.7422,
+      "model_net_value_per_wallet_bdt": 3.5275,
+      "routed_net_value_per_wallet_bdt": 4.6924,
       "rule_total_net_value_bdt": 16275000.0,
-      "model_total_net_value_bdt": 19261375.0,
-      "routed_total_net_value_bdt": 24896375.0,
-      "model_minus_rule_bdt": 2986375.0,
-      "routed_minus_rule_bdt": 8621375.0
+      "model_total_net_value_bdt": 18519550.0,
+      "routed_total_net_value_bdt": 24635100.0,
+      "model_minus_rule_bdt": 2244550.0,
+      "routed_minus_rule_bdt": 8360100.0
     },
     {
       "scenario": "Aggressive (75%)",
@@ -424,13 +424,13 @@
       "recovery_rate": 0.04,
       "cost_scale": 1.0,
       "rule_net_value_per_wallet_bdt": 3.1,
-      "model_net_value_per_wallet_bdt": -0.7803,
-      "routed_net_value_per_wallet_bdt": 3.375,
+      "model_net_value_per_wallet_bdt": -0.6441,
+      "routed_net_value_per_wallet_bdt": 3.3766,
       "rule_total_net_value_bdt": 16275000.0,
-      "model_total_net_value_bdt": -4096750.0,
-      "routed_total_net_value_bdt": 17718925.0,
-      "model_minus_rule_bdt": -20371750.0,
-      "routed_minus_rule_bdt": 1443925.0
+      "model_total_net_value_bdt": -3381700.0,
+      "routed_total_net_value_bdt": 17727150.0,
+      "model_minus_rule_bdt": -19656700.0,
+      "routed_minus_rule_bdt": 1452150.0
     },
     {
       "scenario": "Aggressive (75%)",
@@ -439,13 +439,13 @@
       "recovery_rate": 0.04,
       "cost_scale": 1.5,
       "rule_net_value_per_wallet_bdt": 3.1,
-      "model_net_value_per_wallet_bdt": -5.2295,
-      "routed_net_value_per_wallet_bdt": 2.9874,
+      "model_net_value_per_wallet_bdt": -4.8158,
+      "routed_net_value_per_wallet_bdt": 3.0045,
       "rule_total_net_value_bdt": 16275000.0,
-      "model_total_net_value_bdt": -27454875.0,
-      "routed_total_net_value_bdt": 15683675.0,
-      "model_minus_rule_bdt": -43729875.0,
-      "routed_minus_rule_bdt": -591325.0
+      "model_total_net_value_bdt": -25282950.0,
+      "routed_total_net_value_bdt": 15773625.0,
+      "model_minus_rule_bdt": -41557950.0,
+      "routed_minus_rule_bdt": -501375.0
     },
     {
       "scenario": "Aggressive (75%)",
@@ -454,13 +454,13 @@
       "recovery_rate": 0.08,
       "cost_scale": 0.5,
       "rule_net_value_per_wallet_bdt": 6.7,
-      "model_net_value_per_wallet_bdt": 11.7868,
-      "routed_net_value_per_wallet_bdt": 13.243,
+      "model_net_value_per_wallet_bdt": 11.2267,
+      "routed_net_value_per_wallet_bdt": 13.0,
       "rule_total_net_value_bdt": 35175000.0,
-      "model_total_net_value_bdt": 61880875.0,
-      "routed_total_net_value_bdt": 69525575.0,
-      "model_minus_rule_bdt": 26705875.0,
-      "routed_minus_rule_bdt": 34350575.0
+      "model_total_net_value_bdt": 58940350.0,
+      "routed_total_net_value_bdt": 68250000.0,
+      "model_minus_rule_bdt": 23765350.0,
+      "routed_minus_rule_bdt": 33075000.0
     },
     {
       "scenario": "Aggressive (75%)",
@@ -469,13 +469,13 @@
       "recovery_rate": 0.08,
       "cost_scale": 1.0,
       "rule_net_value_per_wallet_bdt": 6.7,
-      "model_net_value_per_wallet_bdt": 7.3377,
-      "routed_net_value_per_wallet_bdt": 9.6665,
+      "model_net_value_per_wallet_bdt": 7.0551,
+      "routed_net_value_per_wallet_bdt": 9.5856,
       "rule_total_net_value_bdt": 35175000.0,
-      "model_total_net_value_bdt": 38522750.0,
-      "routed_total_net_value_bdt": 50749125.0,
-      "model_minus_rule_bdt": 3347750.0,
-      "routed_minus_rule_bdt": 15574125.0
+      "model_total_net_value_bdt": 37039100.0,
+      "routed_total_net_value_bdt": 50324575.0,
+      "model_minus_rule_bdt": 1864100.0,
+      "routed_minus_rule_bdt": 15149575.0
     },
     {
       "scenario": "Aggressive (75%)",
@@ -484,13 +484,13 @@
       "recovery_rate": 0.08,
       "cost_scale": 1.5,
       "rule_net_value_per_wallet_bdt": 6.7,
-      "model_net_value_per_wallet_bdt": 2.8885,
-      "routed_net_value_per_wallet_bdt": 7.9386,
+      "model_net_value_per_wallet_bdt": 2.8834,
+      "routed_net_value_per_wallet_bdt": 7.9175,
       "rule_total_net_value_bdt": 35175000.0,
-      "model_total_net_value_bdt": 15164625.0,
-      "routed_total_net_value_bdt": 41677475.0,
-      "model_minus_rule_bdt": -20010375.0,
-      "routed_minus_rule_bdt": 6502475.0
+      "model_total_net_value_bdt": 15137850.0,
+      "routed_total_net_value_bdt": 41567050.0,
+      "model_minus_rule_bdt": -20037150.0,
+      "routed_minus_rule_bdt": 6392050.0
     }
   ]
 }

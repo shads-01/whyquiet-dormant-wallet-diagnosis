@@ -1,3 +1,4 @@
 # Enforce LF line endings for LightGBM model text files
 src/model/artifacts/model.txt text eol=lf
 *.parquet binary
+

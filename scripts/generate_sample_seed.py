@@ -46,8 +46,19 @@ def generate_sample_seed():
             "shuffled_label_f1_b": 0.201,
             "best_single_feature": "post_fee_cashout_ratio",
             "best_single_feature_f1_b": 0.384,
-            "rule_baseline_f1_b": 0.221
+            "rule_baseline_f1_b": 0.221,
+            "refusal_validity": {
+                "refusal_rate_blended": 0.402,
+                "refusal_rate_clean": 0.205,
+                "enrichment_ratio": 1.959,
+                "forced_error_refused": 0.467,
+                "forced_error_attributed": 0.121,
+            },
+            "verdict_flip_rate": 0.199,
         },
+        "population_c": {"macro_f1": 0.766, "refusal_rate": 0.269, "n_wallets": 3000},
+        "pilot": {"alpha": 0.05, "power": 0.8, "n_per_arm": 424, "n_arms": 3, "total_wallets": 1272,
+                  "generic_factor": 0.25, "benchmark_rate": 0.04},
         "confusion_b": {
             "labels": ["job_exit", "migration", "solved_problem", "fee_shock", "supply_failure"],
             "matrix": [
@@ -71,7 +82,26 @@ def generate_sample_seed():
         "break_even": break_even,
         "sweep": sweep,
         "routing_plan": routing_plans,
-        "assumptions": ASSUMPTIONS
+        "assumptions": ASSUMPTIONS,
+        "calibration_bins": [
+            {"bin": 0, "mean_confidence": 0.05, "empirical_accuracy": 0.0, "n": 0},
+            {"bin": 1, "mean_confidence": 0.15, "empirical_accuracy": 0.0, "n": 0},
+            {"bin": 2, "mean_confidence": 0.25, "empirical_accuracy": 0.2, "n": 1},
+            {"bin": 3, "mean_confidence": 0.35, "empirical_accuracy": 0.33, "n": 1},
+            {"bin": 4, "mean_confidence": 0.45, "empirical_accuracy": 0.4, "n": 2},
+            {"bin": 5, "mean_confidence": 0.55, "empirical_accuracy": 0.5, "n": 2},
+            {"bin": 6, "mean_confidence": 0.65, "empirical_accuracy": 0.67, "n": 3},
+            {"bin": 7, "mean_confidence": 0.75, "empirical_accuracy": 0.75, "n": 4},
+            {"bin": 8, "mean_confidence": 0.85, "empirical_accuracy": 0.83, "n": 3},
+            {"bin": 9, "mean_confidence": 0.95, "empirical_accuracy": 0.92, "n": 4},
+        ],
+        "per_cause_f1_b": [
+            {"cause": "job_exit", "precision": 0.88, "recall": 0.92, "f1": 0.9, "support": 5},
+            {"cause": "migration", "precision": 0.9, "recall": 0.85, "f1": 0.87, "support": 4},
+            {"cause": "solved_problem", "precision": 0.86, "recall": 0.93, "f1": 0.89, "support": 3},
+            {"cause": "fee_shock", "precision": 0.84, "recall": 0.78, "f1": 0.81, "support": 4},
+            {"cause": "supply_failure", "precision": 0.91, "recall": 0.86, "f1": 0.88, "support": 4},
+        ],
     }
 
     # Helper to generate 26-week series
