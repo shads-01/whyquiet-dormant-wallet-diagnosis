@@ -1,25 +1,38 @@
+import csv
+import io
 import logging
 from datetime import UTC, datetime, timedelta
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from fastapi import Query as FastQuery
 from postgrest.exceptions import APIError
 from supabase_auth.errors import AuthApiError
 
 from src.api.auth import Actor, current_user, role_of, supabase_client
+from src.api.campaign import (
+    audit,
+    deliver,
+    verified_body,
+    webhook_configured,
+    webhook_payload,
+)
 from src.api.schemas import (
     AuditEntry,
+    AuditRole,
     Batch,
     BatchStatus,
     CreateBatchRequest,
     DecisionRequest,
+    DeliveryResult,
     ExportBatchResponse,
     LockedWallet,
     LockReason,
     LoginRequest,
     LoginResponse,
+    Receipt,
+    SmsStatus,
     UserRole,
 )
 from src.rules.remedies import REMEDIES
@@ -69,6 +82,31 @@ def _batch(row: Any) -> Batch:
     )
 
 
+CAMPAIGN_ACTIONS = ["campaign.delivered", "campaign.failed", "campaign.receipt"]
+
+
+def _with_sms(sb: Client, batches: list[Batch]) -> list[Batch]:
+    """Attach each approved batch's SMS hand-off state (latest webhook attempt, latest receipt)."""
+    ids = [b.id for b in batches if b.status == BatchStatus.approved]
+    if not ids:
+        return batches
+    sms = {i: SmsStatus(gateway_connected=webhook_configured()) for i in ids}
+    try:
+        events: Any = (sb.table("audit_log").select("action, target_id, metadata, created_at")
+                       .in_("target_id", ids).in_("action", CAMPAIGN_ACTIONS).order("created_at").execute().data)
+    except APIError as exc:
+        logger.warning("Failed to read campaign events: %s", exc)
+        events = []
+    for e in events:
+        s, m = sms[str(e["target_id"])], e.get("metadata") or {}
+        if e["action"] == "campaign.receipt":
+            s.sent, s.delivered, s.failed = m.get("sent"), m.get("delivered"), m.get("failed")
+            s.failed_wallet_ids = m.get("failed_wallet_ids") or []
+        else:
+            s.webhook = "delivered" if e["action"] == "campaign.delivered" else "failed"
+    return [b.model_copy(update={"sms": sms.get(b.id)}) for b in batches]
+
+
 def _require(actor: Actor, role: UserRole) -> None:
     if actor.role != role:
         raise HTTPException(403, f"Requires the {role.value} role")
@@ -105,7 +143,7 @@ def list_batches(
     if status is not None:
         query = query.eq("status", status.value)
     rows: Any = query.range(offset, offset + limit - 1).execute().data
-    return [_batch(r) for r in rows]
+    return _with_sms(sb, [_batch(r) for r in rows])
 
 
 @router.post("/batches", response_model=Batch)
@@ -139,8 +177,11 @@ def _decide(sb: Client, actor: Actor, batch_id: UUID, status: BatchStatus, note:
 
 @router.post("/batches/{id}/approve", response_model=Batch)
 def approve_batch(id: UUID, req: DecisionRequest, sb: SB, actor: User) -> Batch:
-    # Approve a proposed batch (Approver only, cannot approve self-proposed batches)
-    return _decide(sb, actor, id, BatchStatus.approved, req.note)
+    # Approve a proposed batch (Approver only, cannot approve self-proposed batches), then fire the campaign webhook
+    batch = _decide(sb, actor, id, BatchStatus.approved, req.note)
+    if webhook_configured():
+        deliver(sb, actor.id, _export(sb, id))  # outcome goes to the audit log; never undoes the approval
+    return _with_sms(sb, [batch])[0]
 
 
 @router.post("/batches/{id}/reject", response_model=Batch)
@@ -149,9 +190,7 @@ def reject_batch(id: UUID, req: DecisionRequest, sb: SB, actor: User) -> Batch:
     return _decide(sb, actor, id, BatchStatus.rejected, req.note)
 
 
-@router.get("/batches/{id}/export", response_model=ExportBatchResponse)
-def export_batch(id: UUID, sb: SB, actor: User) -> ExportBatchResponse:
-    # Export campaign parameters and target wallet IDs for an approved batch (Authenticated only)
+def _export(sb: Client, id: UUID) -> ExportBatchResponse:
     rows: Any = sb.table("batch_summaries").select("*").eq("id", str(id)).execute().data
     if not rows:
         raise HTTPException(404, "Batch not found")
@@ -171,6 +210,54 @@ def export_batch(id: UUID, sb: SB, actor: User) -> ExportBatchResponse:
         approved_by=str(b["decided_by"]),
         approved_at=b["decided_at"],
     )
+
+
+@router.get("/batches/{id}/export", response_model=ExportBatchResponse,
+            responses={200: {"content": {"text/csv": {}}}})
+def export_batch(id: UUID, sb: SB, actor: User, format: Literal["json", "csv"] = "json") -> Any:
+    # Export an approved batch (Authenticated only): JSON, or CSV with one row per wallet for campaign tools
+    export = _export(sb, id)
+    if format == "json":
+        return export
+    p = webhook_payload(export)
+    buf = io.StringIO()
+    out = csv.writer(buf, lineterminator="\n")
+    out.writerow(["batch_id", "wallet_id", "cause", "remedy_code", "unit_cost_bdt", "message_en", "message_bn"])
+    unit = export.cost_bdt / len(export.wallet_ids) if export.wallet_ids else 0.0
+    for w in export.wallet_ids:
+        out.writerow([export.batch_id, w, export.cause.value, export.remedy_code, unit, p["message_en"], p["message_bn"]])
+    return Response("\ufeff" + buf.getvalue(), media_type="text/csv; charset=utf-8",  # BOM so Excel reads Bangla
+                    headers={"Content-Disposition": f'attachment; filename="campaign-{export.batch_id}.csv"'})
+
+
+@router.post("/batches/{id}/redeliver", response_model=DeliveryResult)
+def redeliver_batch(id: UUID, sb: SB, actor: User) -> DeliveryResult:
+    # Re-send an approved batch to the campaign webhook (Approver only); receivers dedupe on Idempotency-Key
+    _require(actor, UserRole.approver)
+    if not webhook_configured():
+        raise HTTPException(409, "Campaign webhook not configured")
+    return deliver(sb, actor.id, _export(sb, id))
+
+
+@router.post("/campaign/receipts", response_model=Receipt)
+def campaign_receipt(receipt: Receipt, sb: SB, _body: Annotated[bytes, Depends(verified_body)]) -> Receipt:
+    # SMS gateway delivery report for an approved batch, HMAC-signed with the webhook secret
+    rows: Any = sb.table("batch_summaries").select("*").eq("id", str(receipt.batch_id)).execute().data
+    if not rows:
+        raise HTTPException(404, "Batch not found")
+    if rows[0]["status"] != BatchStatus.approved.value:
+        raise HTTPException(409, "Batch is not approved")
+    if receipt.sent > rows[0]["wallet_count"]:
+        raise HTTPException(422, "sent exceeds the batch's wallet count")
+    if receipt.failed_wallet_ids:
+        members: Any = sb.table("batch_wallets").select("wallet_id").eq("batch_id", str(receipt.batch_id)).execute().data
+        if not set(receipt.failed_wallet_ids) <= {w["wallet_id"] for w in members}:
+            raise HTTPException(422, "failed_wallet_ids contains a wallet that is not in this batch")
+    meta = receipt.model_dump(mode="json", exclude={"batch_id"}, exclude_none=True)
+    if not receipt.failed_wallet_ids:
+        meta.pop("failed_wallet_ids")
+    audit(sb, None, "system", "campaign.receipt", str(receipt.batch_id), meta)
+    return receipt
 
 
 @router.get("/wallets/locked", response_model=list[LockedWallet])
@@ -244,8 +331,8 @@ def get_batch_audit(id: UUID, sb: SB, actor: User) -> list[AuditEntry]:
         result.append(
             AuditEntry(
                 id=str(r["id"]),
-                actor_id=str(r["actor_id"]),
-                actor_role=UserRole(r["actor_role"]),
+                actor_id=str(r["actor_id"]) if r["actor_id"] else None,
+                actor_role=AuditRole(r["actor_role"]),
                 action=r["action"],
                 target_id=str(r["target_id"]),
                 metadata=r.get("metadata") or {},

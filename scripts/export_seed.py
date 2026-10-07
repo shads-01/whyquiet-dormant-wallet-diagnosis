@@ -20,7 +20,8 @@ if str(ROOT) not in sys.path:
 
 from datagen.generate import main as generate
 from scripts.evaluate import _split, report
-from src.model.train import ACCURACY_FLOOR, CAUSES, decide, predict, train
+from src.model.score import explain, save
+from src.model.train import ACCURACY_FLOOR, train
 from src.rules.baseline import rule_baseline
 from src.rules.remedies import REMEDIES
 
@@ -30,6 +31,8 @@ HONESTY_LINE = (  # AMENDMENT A1, verbatim
     "not real-world accuracy."
 )
 SAMPLE = 400
+LEDGER_SAMPLE = 20  # wallets in web/public/sample-ledger.csv for the Score page (D55)
+MODEL_VERSION = "lgbm-v1"
 REFUSED_SHARE = 0.25  # of the UI sample; plan asks for >= 20% refused so the refusal screen has examples
 MODEL_ASSUMPTIONS = [
     ("ASSUMED: every wallet and cause is simulated (datagen, D21); only the population A cause mix is anchored to a "
@@ -37,6 +40,10 @@ MODEL_ASSUMPTIONS = [
     (f"ASSUMED: the model only names a cause when it is at least {ACCURACY_FLOOR:.0%} accurate on a validation "
      "slice of A-train; otherwise it refuses (D28)."),
 ]
+
+
+LEDGER_COLUMNS = ["wallet_id", "acquired_week", "fee_week", "pay_cycle", "week", "txn_count", "amount_bdt",
+                  "cashin_count", "cashout_ok", "cashout_fail", "app_share", "district_changed"]
 
 
 def _round(x: Any) -> Any:
@@ -60,39 +67,43 @@ def _pick(keys: pd.Series, k: int, seed: int) -> list[int]:
 def export(seed: int, root: Path = ROOT, out: Path = ROOT / "web" / "public" / "seed.json") -> dict:
     generate(seed, root)
     booster, tau, delta = train(seed, root / "data" / "train")
+    save(booster, {"model_version": MODEL_VERSION, "seed": seed, "tau": tau, "delta": delta},
+         root / "src" / "model" / "artifacts")
     wallets, X, truth = _split(root, "b", root / "truth" / "b_labels.parquet")
-    proba, contrib = predict(booster, X)
-    causes, reasons = decide(proba, tau, delta)
-    top = proba.argmax(axis=1)
+    results = explain(booster, tau, delta, X)
+    causes = [r["cause"] for r in results]
 
-    verdict = pd.Series(["refused" if c is None else "attributed" for c in causes])
-    stratum = verdict + "/" + pd.Series([CAUSES[i] for i in top])
+    verdict = pd.Series([r["verdict"] for r in results])
+    stratum = verdict + "/" + pd.Series([max(r["posterior"], key=r["posterior"].get) for r in results])
     n_refused = int((verdict == "refused").sum())
     k_refused = min(n_refused, round(SAMPLE * REFUSED_SHARE))
     picks = (_pick(stratum[verdict == "refused"], k_refused, seed)
              + _pick(stratum[verdict == "attributed"], SAMPLE - k_refused, seed))
 
     weekly = pd.read_parquet(root / "data" / "b" / "weekly.parquet").sort_values("week")
+    ledger = wallets.iloc[sorted(picks)[:: max(1, len(picks) // LEDGER_SAMPLE)][:LEDGER_SAMPLE]]
+    (weekly[weekly["wallet_id"].isin(ledger["wallet_id"])]
+     .merge(ledger[["wallet_id", "acquired_week", "fee_week", "pay_cycle"]], on="wallet_id")
+     .sort_values(["wallet_id", "week"])
+     .to_csv(out.parent / "sample-ledger.csv", index=False, columns=LEDGER_COLUMNS))
     series: dict[str, list[dict]] = {}
     for w, week, n, amt in zip(*(weekly[c].tolist() for c in ["wallet_id", "week", "txn_count", "amount_bdt"])):
         series.setdefault(w, []).append({"week": week, "txn_count": n, "amount_bdt": amt})
     sample = []
     for i in sorted(picks):
         row = wallets.iloc[i]
-        push = contrib[i, top[i], :-1]  # toward the predicted (or, if refused, top posterior) cause; bias dropped
-        best = np.argsort(-np.abs(push))[:8]
+        r = results[i]
         sample.append({
             "wallet_id": row["wallet_id"],
             "worker_type": row["worker_type"],
             "pay_cycle": row["pay_cycle"],
             "weeks_silent": int(X.iloc[i]["weeks_silent"]),
             "series": series[row["wallet_id"]],
-            "verdict": verdict[i],
-            "cause": causes[i],
-            "posterior": {c: float(p) for c, p in zip(CAUSES, proba[i])},
-            "contributions": [{"feature": X.columns[j], "value": float(X.iloc[i, j]), "contribution": float(push[j])}
-                              for j in best],
-            "refusal_reasons": reasons[i],
+            "verdict": r["verdict"],
+            "cause": r["cause"],
+            "posterior": r["posterior"],
+            "contributions": r["contributions"],
+            "refusal_reasons": r["refusal_reasons"],
             "rule_baseline": rule_baseline(int(X.iloc[i]["weeks_silent"])),
         })
 
@@ -108,7 +119,7 @@ def export(seed: int, root: Path = ROOT, out: Path = ROOT / "web" / "public" / "
         "meta": {
             "generated_at": datetime.now(UTC).isoformat(timespec="seconds"),
             "seed": seed,
-            "model_version": "lgbm-v1",
+            "model_version": MODEL_VERSION,
             "tau": tau,
             "delta": delta,
             "n_wallets_b_total": len(truth),
