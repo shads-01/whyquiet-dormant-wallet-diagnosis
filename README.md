@@ -71,7 +71,7 @@ For **upay's MFS operations team**, **sending the same "come back" SMS to every 
 | **Triage Queue** | `#/` | 400 population-B wallets (300 attributed, 100 refused) with verdict, cause, confidence, weeks silent, and what the 3-week rule would have done. Filter by verdict and cause, search, sort. Quick wallet lookup with `W-XXXXXX` format validation. |
 | **Wallet Detail** | `#/w/<wallet_id>` | Weekly decline-shape chart with the silent window shaded; 5-cause posterior bar chart with the τ (confidence bar) line; top 8 signed feature contributions; "rule vs Cause Desk" comparison; remedy card with unit cost and bilingual message preview. |
 | **Refusal view** | `#/w/<refused id>` | Headline *"No attributable cause. I will not spend your money here."*, the exact refusal reasons (τ and/or δ test that failed), and no action buttons. |
-| **Evidence** | `#/evidence` | Population-B metrics (macro-F1, A→B gap, refusal rates, calibration error), rule baseline, shuffled-label control, best single feature, confusion matrix, subgroup table, and the money table with a 1% / 4% / 8% recovery-rate switch. All ASSUMED inputs are listed. |
+| **Evidence** | `#/evidence` | Population-B metrics (macro-F1, A→B gap, refusal rates, calibration error), rule baseline, shuffled-label control, best single feature; the refusal coverage curve and baseline ladder; per-cause scores, blended-wallet refusal and feature ablation; confusion matrix; subgroup table with calibration error; reliability diagram; label-free checks (accuracy estimate, cause mix, drift alarm); stress tests (noise dial, unseen cause); and the value-gated money table with a 1% / 4% / 8% recovery-rate switch. All ASSUMED inputs are listed. |
 | **Batches** | `#/batches` | Propose a cause-targeted batch (analyst), approve/reject with a required note (approver), download an approved batch as a campaign JSON. |
 | Design system | `#/design` | Style tokens and components used by the console. |
 | Light/dark mode | header toggle | Stored per browser. |
@@ -254,6 +254,7 @@ The web console still works if the API is down: read screens use `seed.json` and
 ```bash
 uv run python -m datagen.generate --seed 42      # synthetic data only -> data/, truth/
 uv run python scripts/evaluate.py --seed 42      # metrics JSON (needs the data above)
+uv run python scripts/depth.py --seed 42         # phase 2 evidence JSON: coverage, baselines, label-free checks, stress tests
 uv run python scripts/export_seed.py --seed 42   # full pipeline -> web/public/seed.json
 ```
 
@@ -449,7 +450,66 @@ How to read this fairly: the model's F1 counts only the 78.3% of B wallets it at
 | 4% | +9,300 | +4,560 | +10,200 |
 | 8% | +20,100 | +34,947 | +53,400 |
 
-Honest reading: with these assumed costs, cause targeting only beats the cheap blanket SMS when the targeted recovery rate is high (8%); at 1% and 4% the rule's low cost wins. The point of the table is to make that break-even visible and adjustable, not to claim a win. Real recovery rates and costs are exactly what upay data would need to supply.
+Honest reading: with these assumed costs, sending the targeted remedy to every attributed wallet only beats the cheap blanket SMS when the targeted recovery rate is high (8%); at 1% and 4% the rule's low cost wins. The fix is below.
+
+### Phase 2 evidence (`scripts/depth.py`, D60–D64)
+
+Everything here is computed by `uv run python scripts/depth.py --seed 42` and shipped as `report.depth` in `seed.json`. The model, τ/δ, the data and every number above are unchanged.
+
+**1. Refusal is a dial, and the baseline ladder.** The headline counts only answered wallets, so we show the whole curve. Ranking B wallets by confidence and answering only the top share:
+
+| Share of B answered | 100% | 90% | 80% | 78.3% (shipped τ/δ) | 70% | 50% |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Macro-F1 | 0.785 | 0.828 | 0.856 | **0.864** (95% bootstrap CI 0.849–0.878) | 0.887 | 0.930 |
+
+| Baseline on B | Answers | Macro-F1 |
+| --- | ---: | ---: |
+| Always guess the most common cause | 100% | 0.082 |
+| Hand-written analyst rules (`expert_cause` in `src/rules/baseline.py`, thresholds from A-train medians) | 100% | 0.720 |
+| Logistic regression | 100% | 0.785 |
+| LightGBM | 100% | 0.785 |
+| LightGBM with calibrated refusal (shipped) | 78.3% | **0.864** |
+
+Honest finding: forced to answer every wallet, logistic regression ties LightGBM on B. LightGBM earns its place by ranking its own mistakes better: area under the risk-coverage curve 0.080 vs 0.100 (lower is better), so it is ahead at every refusal level (0.856 vs 0.841 at 80%). Holding out one pay cycle at a time inside population A, it also beats logistic regression in 3 of 3 folds (0.928 / 0.934 / 0.915 vs 0.905 / 0.894 / 0.901).
+
+**2. Where it is right and wrong.** Refusal finds ambiguity without being told where it is: blended (two-cause) wallets are refused 32.6% of the time vs 17.1% for clean ones, and answered blended wallets are 66% accurate vs 94% for clean ones. Fee shock is the weakest cause (F1 0.80 answered). Dropping one feature family and retraining hurts exactly the cause it was designed for: agent failures → supply failure −27 F1 points, location/channel → migration −25, salary/cash-in → job exit −21, fee/ticket → fee shock −18. The model reads mechanisms, not simulator quirks.
+
+**3. Calibration under shift.** Calibration error is 0.017 on A-test but 0.100 on B: under shift the model is overconfident (it says 89% on average and is right 79% of the time). Temperature scaling fitted on A does not fix it (T = 1.05, B error 0.093), because the cause is the shift, not the training. Per-group calibration error on B ranges 0.074 (garment) to 0.123 (retail).
+
+**4. Checks that need no labels** (the answer to "real-world validation"). A real ledger has no cause column, so these run on unlabeled data and are tested here on B, where we secretly know the truth:
+
+| Check | Method | On B | Truth |
+| --- | --- | ---: | ---: |
+| How accurate is the model on this ledger? | Raw confidence | 88.8% | 78.8% |
+| | ATC, cut learned on A ([Garg et al. 2022](https://arxiv.org/abs/2201.04234)) | **83.2%** | 78.8% |
+| What share of the dormant base is each cause? (largest error over 5 causes) | Assume the training mix | 10.2 pts | |
+| | EM prior adjustment ([Saerens et al. 2002](https://doi.org/10.1162/089976602753284446)) | **2.8 pts** | |
+| Has the population moved? | Domain classifier AUC A vs B; PSI per feature | 1.00; `weeks_after_fee` 1.16, `base_txn_mean` 0.54 | |
+
+ATC is checked on A-test too (93.3% estimated vs 93.4% true). The EM prior (A-train frequencies) was chosen over a uniform prior on A-test only.
+
+**5. Stress tests** (built in memory, never trained on, never saved). Turning up B's noise and cause-mixing step by step, quality falls gradually and refusal rises with it:
+
+| Level | Mixed wallets | Macro-F1 answered | Refused | True accuracy | No-label estimate |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| A-like noise | 20% | 0.879 | 20.4% | 79.5% | 83.3% |
+| B | 30% | 0.857 | 23.1% | 79.3% | 81.5% |
+| B+ | 45% | 0.813 | 26.7% | 73.4% | 79.7% |
+| B++ | 60% | 0.733 | 29.6% | 67.2% | 76.8% |
+
+A sixth cause the model never saw (`device_loss`: phone lost or SIM swapped, activity just stops) is refused 41.8% of the time vs 21.5% for known causes in the same population. Honest limit: the rest get a confident label (fee shock 53%, job exit 29%). A model can refuse what looks ambiguous, not what looks familiar; the drift alarm and the cause-mix estimate are the signals to add a new cause.
+
+**6. Money with a value gate** (`best_action` and `money_ev_table` in `src/rules/money.py`). For each attributed wallet, pick whichever has the highest expected value: skip, the blanket SMS, or the cause's targeted remedy (P(cause) × recovery × 360 BDT − cost). Refused wallets are always skipped, so the refusal promise holds. ASSUMED on top of the inputs above: each remedy costs its own unit cost (job exit 15, migration 10, fee shock 25, supply failure 5 BDT), and solved-problem wallets do not come back for any message.
+
+| Recovery rate | Rule (SMS everyone) | Cause Desk, act on every answer | **Cause Desk + value gate** | Oracle (true cause + value gate) |
+| --- | ---: | ---: | ---: | ---: |
+| 1% | +770 | −20,629 | **+728** | +1,009 |
+| 4% | +7,579 | −2,431 | **+8,113** | +12,175 |
+| 8% | +16,658 | +21,833 | **+24,671** | +38,086 |
+
+With the gate, WhyQuiet beats the blanket SMS at 4% and 8% and ties it at 1% (−42 BDT), while never spending on a refused wallet. The gate also explains *why*: at 1% almost every targeted remedy costs more than it can return, so it falls back to the SMS and skips likely solved-problem wallets. The gate trusts the posterior, which is overconfident on B (point 3), so these figures are optimistic in the same direction.
+
+**7. How a pilot would settle it.** Randomize triaged wallets within each predicted cause into *targeted remedy* vs *blanket SMS*, run 8 weeks, and compare recovery. With the ASSUMED 4% targeted vs 1% generic recovery, detecting the difference (two-sided α = 0.05, power 0.8) needs **424 wallets per arm**, about 4,240 for a read-out per cause. If targeting only lifts recovery from 1% to 2%, it needs 2,319 per arm. Run the label-free checks above on the pilot ledger from day one; go/no-go is the measured net value of the value-gated strategy against the SMS arm.
 
 ---
 
@@ -543,6 +603,7 @@ flowchart LR
 - **Batches screen hides some API failures.** Sign-in uses the real `POST /api/auth/login`, but if a propose, approve or export call fails, the Batches screen falls back to a local in-browser batch instead of showing the error. Authentication, roles and the two-person rule are enforced by the **API and database** (verify with the `curl` steps in [Testing](#9-testing-instructions)). Tracked as bug #3 in [`docs/TEST_REPORT.md`](docs/TEST_REPORT.md). <!-- TODO: remove this bullet if the Batches fallbacks are removed before submission. -->
 - **Public read endpoints.** `GET /api/batches` and `GET /api/batches/{id}/export` need no login. They expose only pseudonymous synthetic wallet IDs.
 - **Money model inputs are all ASSUMED** (ARPU, costs, recovery rates).
+- **Overconfident under shift, blind to unseen causes.** Calibration error rises from 0.017 (A) to 0.100 (B), and a never-seen cause is refused only 42% of the time. The label-free accuracy estimate and drift alarm flag both, but a labelled pilot is still required.
 
 ---
 
