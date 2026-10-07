@@ -1,0 +1,43 @@
+# WhyQuiet Synthetic MFS Simulator Configuration
+# Ground truth parameters, cause distribution, uplift response surfaces, and assumptions
+
+seed: 42
+n_wallets: 200000
+train_population_ratio: 0.5  # Population A (100k) vs Population B (100k)
+
+# Assumed cause mix across dormant wallet population (Anchored to MFS survey assumptions)
+cause_mix:
+  fee_shock: 0.28
+  supply_failure: 0.22
+  migration: 0.18
+  job_exit: 0.17
+  solved_problem: 0.15
+
+# Causal Segment Base Proportions within population
+segment_priors:
+  persuadable: 0.35
+  sure_thing: 0.12
+  lost_cause: 0.45
+  sleeping_dog: 0.08  # Negative uplift under contact
+
+# RCT Pilot Trial Setup for synthetic training history
+pilot_trial:
+  holdout_control_rate: 0.20
+  treatment_arms_distribution:
+    A0: 0.25  # Pure informational nudge
+    A1: 0.20  # Micro-credit / emergency balance
+    A2: 0.25  # Merchant offset
+    A3: 0.30  # Fee waiver
+
+# Noise & Realism settings
+noise:
+  label_noise_rate: 0.08
+  feature_jitter_std: 0.05
+  outcome_noise_std: 0.10
+
+# Economic and behavioral ground-truth response assumptions (Documented as ASSUMED)
+economics:
+  monthly_arpu_bdt: 120.0
+  retained_months_multiplier: 3.0  # LTV proxy = 360 BDT
+  sms_unit_cost_bdt: 0.50
+  push_unit_cost_bdt: 0.05

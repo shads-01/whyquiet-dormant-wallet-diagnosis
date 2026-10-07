@@ -1,0 +1,58 @@
+# WhyQuiet Dormancy Causes Configuration
+# Five distinct root-cause diagnoses praised by Hackathon Judges
+
+causes:
+  fee_shock:
+    code: "fee_shock"
+    display_name_en: "Fee Shock"
+    display_name_bn: "চার্জ সংক্রান্ত বিরক্তি"
+    description: "User drains balance or halts activity following cash-out fee jumps or tariff cliffs."
+    recoverable_by_outreach: true
+    prior_recovery_rate: 0.35
+    recommended_arm: "A3"  # Fee waiver / discount
+    recommended_channel: "sms"
+    rationale: "Targeted fee relief removes the direct friction that triggered inactivity."
+
+  supply_failure:
+    code: "supply_failure"
+    display_name_en: "Supply Failure (Agent Float / USSD)"
+    display_name_bn: "এজেন্ট পয়েন্টে ক্যাশ বা নেটওয়ার্ক জটিলতা"
+    description: "Failed cash-out attempts at agents with depleted float or recurring USSD session timeouts."
+    recoverable_by_outreach: true
+    prior_recovery_rate: 0.28
+    recommended_arm: "A_ops"  # Ops ticket first + proximity notification
+    recommended_channel: "sms"
+    rationale: "Fix agent liquidity/float first, then notify user of cash availability nearby."
+
+  migration:
+    code: "migration"
+    display_name_en: "Migration (Geo / Competitor)"
+    display_name_bn: "এলাকা বা অন্য মাধ্যমে স্থানান্তর"
+    description: "Customer relocated to a new district or shifted transaction volume to a competitor wallet."
+    recoverable_by_outreach: true
+    prior_recovery_rate: 0.18
+    recommended_arm: "A2"  # Merchant payment / cash-out offset
+    recommended_channel: "push"
+    rationale: "Location-aware agent/merchant incentive only if user demonstrates positive uplift."
+
+  job_exit:
+    code: "job_exit"
+    display_name_en: "Job Exit / Income Loss"
+    display_name_bn: "আয়ের উৎস বা বেতন বন্ধ"
+    description: "Inbound salary or regular remittance ended; peer transfer network decayed."
+    recoverable_by_outreach: false
+    prior_recovery_rate: 0.04
+    recommended_arm: "A_none"  # Suppress
+    recommended_channel: "none"
+    rationale: "Extremely low recoverability; outreach wastes budget without addressing income loss."
+
+  solved_problem:
+    code: "solved_problem"
+    display_name_en: "Solved Problem"
+    display_name_bn: "নির্দিষ্ট প্রয়োজন সম্পন্ন"
+    description: "The one-off need that opened the wallet is complete (e.g. stipend disbursed, tuition paid)."
+    recoverable_by_outreach: false
+    prior_recovery_rate: 0.02
+    recommended_arm: "A_none"  # Suppress
+    recommended_channel: "none"
+    rationale: "Customer returns organically when the next need arises; contact adds cost and sleeping-dog risk."
