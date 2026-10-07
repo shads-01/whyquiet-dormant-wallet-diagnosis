@@ -12,6 +12,13 @@ import {
 } from "recharts";
 import { loadSeed, type SeedBundle, type Cause } from "./seed";
 import { Card, Chip, Table, Skeleton, ErrorState, EmptyState } from "./design/ui";
+import {
+  CalibrationSection,
+  ErrorAnatomySection,
+  LabelFreeSection,
+  RefusalDialSection,
+  StressSection,
+} from "./EvidenceDepth";
 
 const CAUSE_LABELS: Record<Cause, string> = {
   job_exit: "Job Exit",
@@ -19,6 +26,21 @@ const CAUSE_LABELS: Record<Cause, string> = {
   solved_problem: "Solved Problem",
   fee_shock: "Fee Shock",
   supply_failure: "Supply Failure",
+};
+
+const STRATEGY_LABELS: Record<string, string> = {
+  rule: "Rule Baseline",
+  model: "Cause Desk (act on every answer)",
+  model_ev: "Cause Desk + value gate",
+  oracle: "Oracle (Upper Bound)",
+};
+const ACTION_LABELS: Record<string, string> = {
+  none: "skip",
+  generic: "SMS",
+  job_exit: "payroll",
+  migration: "agent map",
+  fee_shock: "fee waiver",
+  supply_failure: "float alert",
 };
 
 const formatBDT = (amount: number): string => {
@@ -56,7 +78,8 @@ export default function Evidence() {
 
   const report = bundle?.report;
   const ml = report?.ml;
-  const money = report?.money;
+  const depth = report?.depth;
+  const money = depth?.money_ev ?? report?.money; // decision-aware table (D63) when the seed has it
 
   // Filter money rows for currently selected rate
   const moneyFiltered = useMemo(() => {
@@ -65,36 +88,15 @@ export default function Evidence() {
   }, [money, rate]);
 
   // Chart data for economic comparison
-  const moneyChartData = useMemo(() => {
-    if (!moneyFiltered.length) return [];
-    const ruleRow = moneyFiltered.find((m) => m.strategy === "rule");
-    const modelRow = moneyFiltered.find((m) => m.strategy === "model");
-    const oracleRow = moneyFiltered.find((m) => m.strategy === "oracle");
-
-    return [
-      {
-        name: "Rule Baseline",
-        netValue: ruleRow?.value_bdt ?? 0,
-        cost: ruleRow?.cost_bdt ?? 0,
-        users: ruleRow?.users_recovered ?? 0,
-        strategy: "rule",
-      },
-      {
-        name: "WhyQuiet Model",
-        netValue: modelRow?.value_bdt ?? 0,
-        cost: modelRow?.cost_bdt ?? 0,
-        users: modelRow?.users_recovered ?? 0,
-        strategy: "model",
-      },
-      {
-        name: "Oracle (Theoretical Max)",
-        netValue: oracleRow?.value_bdt ?? 0,
-        cost: oracleRow?.cost_bdt ?? 0,
-        users: oracleRow?.users_recovered ?? 0,
-        strategy: "oracle",
-      },
-    ];
-  }, [moneyFiltered]);
+  const moneyChartData = useMemo(
+    () =>
+      moneyFiltered.map((m) => ({
+        name: STRATEGY_LABELS[m.strategy] ?? m.strategy,
+        netValue: m.value_bdt,
+        strategy: m.strategy,
+      })),
+    [moneyFiltered],
+  );
 
   // Max value in confusion matrix for proportional heat shading
   const maxMatrixVal = useMemo(() => {
@@ -175,7 +177,10 @@ export default function Evidence() {
               {(ml.macro_f1_b * 100).toFixed(1)}%
             </div>
             <p className="text-xs text-[var(--text-muted)] mt-2 leading-relaxed">
-              Achieved under distribution shift on Population B (A-Test: {(ml.macro_f1_a_test * 100).toFixed(1)}%, Generalization Gap: {(ml.gap * 100).toFixed(1)}%).
+              Achieved under distribution shift on Population B (A-Test: {(ml.macro_f1_a_test * 100).toFixed(1)}%, Generalization Gap: {(ml.gap * 100).toFixed(1)}%)
+              {depth &&
+                `, on the ${(depth.coverage.operating_point.coverage * 100).toFixed(1)}% of wallets it answers. 95% interval ${(depth.macro_f1_b_ci95[0] * 100).toFixed(1)}–${(depth.macro_f1_b_ci95[1] * 100).toFixed(1)}%; ${(depth.coverage.lightgbm[0].macro_f1 * 100).toFixed(1)}% if forced to answer all`}
+              .
             </p>
           </Card>
 
@@ -188,7 +193,7 @@ export default function Evidence() {
               {(ml.rule_baseline_f1_b * 100).toFixed(1)}%
             </div>
             <p className="text-xs text-[var(--text-faint)] mt-2">
-              Heuristic "Message Everyone" rule without cause diagnosis.
+              Always guess A's most common cause. Stronger baselines in section 2.
             </p>
           </Card>
 
@@ -240,16 +245,20 @@ export default function Evidence() {
               {ml.ece_b.toFixed(3)}
             </div>
             <p className="text-xs text-[var(--text-faint)] mt-2">
-              Posterior probabilities match true empirical accuracies within 5.2% calibration tolerance.
+              {depth
+                ? `Well calibrated on A-test (${depth.calibration.ece_a_test.toFixed(3)}); overconfident under shift on B. See section 6.`
+                : "Gap between stated confidence and observed accuracy, 10 equal-width bins."}
             </p>
           </Card>
         </div>
       </section>
 
-      {/* 2. Confusion Matrix on Population B */}
+      {depth && <RefusalDialSection depth={depth} n={2} />}
+
+      {/* 3. Confusion Matrix on Population B */}
       <Card className="p-5 sm:p-6 space-y-4" data-testid="confusion-matrix-card">
         <div>
-          <h2 className="t-md font-semibold text-[var(--text)]">2. Confusion Matrix on Attributed Wallets (Population B)</h2>
+          <h2 className="t-md font-semibold text-[var(--text)]">{depth ? 3 : 2}. Confusion Matrix on Attributed Wallets (Population B)</h2>
           <p className="t-xs text-[var(--text-muted)] mt-0.5">
             Evaluated on shifted population B. Rows indicate simulated true causes; columns indicate model predictions.
           </p>
@@ -302,10 +311,12 @@ export default function Evidence() {
         </div>
       </Card>
 
-      {/* 3. Fairness Table */}
+      {depth && <ErrorAnatomySection depth={depth} n={4} />}
+
+      {/* 5. Fairness Table */}
       <Card className="p-5 sm:p-6 space-y-4" data-testid="fairness-card">
         <div>
-          <h2 className="t-md font-semibold text-[var(--text)]">3. Demographic Parity &amp; Subgroup Fairness</h2>
+          <h2 className="t-md font-semibold text-[var(--text)]">{depth ? 5 : 3}. Demographic Parity &amp; Subgroup Fairness</h2>
           <p className="t-xs text-[var(--text-muted)] mt-0.5">
             Validation across worker occupations and payroll frequencies to ensure uniform calibration without biased degradation.
           </p>
@@ -319,6 +330,7 @@ export default function Evidence() {
               <th scope="col" className="text-right">Cohort Size (N)</th>
               <th scope="col" className="text-right">Macro-F1 (Pop B)</th>
               <th scope="col" className="text-right">Refusal Rate</th>
+              {depth && <th scope="col" className="text-right">Calibration Error</th>}
             </tr>
           </thead>
           <tbody>
@@ -339,22 +351,33 @@ export default function Evidence() {
                 <td className="text-right font-mono tnum text-[var(--text-muted)]">
                   {(f.refusal_rate * 100).toFixed(1)}%
                 </td>
+                {depth && (
+                  <td className="text-right font-mono tnum text-[var(--text-muted)]">
+                    {depth.calibration.ece_by_group.find((e) => e.slice === f.slice && e.group === f.group)?.ece.toFixed(3) ?? "–"}
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
         </Table>
       </Card>
 
-      {/* 4. Money & Economic Recovery Model */}
+      {depth && <CalibrationSection depth={depth} n={6} />}
+      {depth && <LabelFreeSection depth={depth} n={7} />}
+      {depth && <StressSection depth={depth} n={8} />}
+
+      {/* 9. Money & Economic Recovery Model */}
       <Card className="p-5 sm:p-6 space-y-6" data-testid="money-card">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="t-lg font-bold text-[var(--text)]">4. Economic Recovery Model &amp; Budget Optimization</h2>
+              <h2 className="t-lg font-bold text-[var(--text)]">{depth ? 9 : 4}. Economic Recovery Model &amp; Budget Optimization</h2>
               <Chip tone="warning" data-testid="assumed-badge">ASSUMED</Chip>
             </div>
             <p className="t-xs text-[var(--text-muted)] mt-0.5">
-              Net economic value comparison: Rule baseline vs. WhyQuiet Cause Desk vs. Oracle upper-bound.
+              {depth
+                ? "Per wallet, the value gate picks whichever is worth most: skip, the blanket SMS, or the cause's targeted remedy. Refused wallets are always skipped."
+                : "Net economic value comparison: Rule baseline vs. WhyQuiet Cause Desk vs. Oracle upper-bound."}
             </p>
           </div>
 
@@ -402,13 +425,14 @@ export default function Evidence() {
             <div
               className="w-full h-72 pt-2"
               role="region"
-              aria-label="Net economic value comparison chart between Rule Baseline, WhyQuiet Model, and Oracle"
+              aria-label="Net economic value comparison chart across strategies"
             >
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={moneyChartData} margin={{ top: 10, right: 20, left: 20, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                   <XAxis dataKey="name" stroke="var(--text-muted)" fontSize={12} tickLine={false} />
                   <YAxis
+                    width={56}
                     stroke="var(--text-faint)"
                     fontSize={11}
                     tickLine={false}
@@ -429,7 +453,7 @@ export default function Evidence() {
                       <Cell
                         key={`money-bar-${idx}`}
                         fill={
-                          entry.strategy === "model"
+                          entry.strategy === (depth ? "model_ev" : "model")
                             ? "var(--accent)"
                             : entry.strategy === "oracle"
                             ? "var(--success)"
@@ -451,13 +475,14 @@ export default function Evidence() {
                   <th scope="col" className="text-right">Recovered Users</th>
                   <th scope="col" className="text-right">Remedy Cost (ASSUMED)</th>
                   <th scope="col" className="text-right">Net Value BDT (ASSUMED)</th>
+                  {depth && <th scope="col">What it did</th>}
                 </tr>
               </thead>
               <tbody>
                 {moneyFiltered.map((m) => (
                   <tr key={m.strategy} data-testid={`money-row-${m.strategy}`}>
                     <td className="capitalize font-semibold text-[var(--text)]">
-                      {m.strategy === "model" ? "WhyQuiet Cause Desk" : m.strategy === "rule" ? "Rule Baseline" : "Oracle (Upper Bound)"}
+                      {STRATEGY_LABELS[m.strategy] ?? m.strategy}
                     </td>
                     <td className="text-right font-mono tnum text-[var(--text)]">
                       {m.wallets_actioned.toLocaleString()}
@@ -471,6 +496,13 @@ export default function Evidence() {
                     <td className={`text-right font-mono tnum font-bold ${m.value_bdt >= 0 ? "text-[var(--accent)]" : "text-[var(--danger)]"}`} data-testid={`net-value-${m.strategy}`}>
                       {formatBDT(m.value_bdt)}
                     </td>
+                    {depth && (
+                      <td className="text-xs text-[var(--text-muted)]">
+                        {Object.entries(m.actions ?? {})
+                          .map(([a, k]) => `${k.toLocaleString()} ${ACTION_LABELS[a] ?? a}`)
+                          .join(" · ")}
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -487,7 +519,7 @@ export default function Evidence() {
             <Chip tone="warning">ASSUMED</Chip>
           </div>
           <ul className="space-y-1.5 text-xs text-[var(--text-faint)] list-disc list-inside">
-            {report.assumptions.map((asm, idx) => (
+            {[...report.assumptions, ...(depth?.assumptions ?? [])].map((asm, idx) => (
               <li key={idx}>
                 <span className="text-[var(--text)]">{asm}</span>
               </li>
