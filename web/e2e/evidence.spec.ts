@@ -1,7 +1,7 @@
 import { test, expect } from "./fixtures";
 
 test.describe("Evidence & ML Rigor Page", () => {
-  test("displays ML rigor panel with headline Population B F1, rule baseline, and shuffled control", async ({ authedPage: page }) => {
+  test("displays ML rigor panel, reliability diagram, and per-cause F1 breakdown", async ({ authedPage: page }) => {
     await page.goto("/#/evidence");
 
     // ML Rigor Panel
@@ -19,9 +19,14 @@ test.describe("Evidence & ML Rigor Page", () => {
     // Shuffled Label Control Card
     await expect(page.getByTestId("shuffled-control-card")).toBeVisible();
     await expect(page.getByTestId("shuffled-control-value")).toContainText("%");
+
+    // Reliability Diagram (Confidence Calibration)
+    const reliabilityCard = page.getByTestId("reliability-diagram-card");
+    await expect(reliabilityCard).toBeVisible();
+    await expect(page.getByTestId("reliability-diagram-chart")).toBeVisible();
   });
 
-  test("displays confusion matrix and demographic parity fairness tables", async ({ authedPage: page }) => {
+  test("displays confusion matrix, per-cause F1 breakdown, and demographic parity fairness tables", async ({ authedPage: page }) => {
     await page.goto("/#/evidence");
 
     // Confusion Matrix Table
@@ -30,6 +35,13 @@ test.describe("Evidence & ML Rigor Page", () => {
     const cmTable = page.getByTestId("confusion-matrix-table");
     await expect(cmTable).toBeVisible();
     await expect(cmTable.locator("tbody tr")).toHaveCount(5);
+
+    // Per-Cause F1 Breakdown Table
+    const perCauseCard = page.getByTestId("per-cause-f1-card");
+    await expect(perCauseCard).toBeVisible();
+    const perCauseTable = page.getByTestId("per-cause-f1-table");
+    await expect(perCauseTable).toBeVisible();
+    await expect(perCauseTable.locator("tbody tr")).toHaveCount(5);
 
     // Fairness Table
     const fairnessCard = page.getByTestId("fairness-card");
@@ -41,6 +53,11 @@ test.describe("Evidence & ML Rigor Page", () => {
 
   test("economic recovery section: handles rate toggling and renders ASSUMED badges", async ({ authedPage: page }) => {
     await page.goto("/#/evidence");
+
+    // Break-even and Cost Sweep Panels
+    await expect(page.getByTestId("break-even-panel")).toBeVisible();
+    await expect(page.getByTestId("cost-sweep-panel")).toBeVisible();
+    await expect(page.getByTestId("cost-sweep-table")).toBeVisible();
 
     // Money Card & ASSUMED badge
     const moneyCard = page.getByTestId("money-card");
@@ -71,6 +88,31 @@ test.describe("Evidence & ML Rigor Page", () => {
     await expect(assumptionsBox.locator("li")).not.toHaveCount(0);
   });
 
+  test("displays refusal validity audit and falsifiability exhibits with calibrated numbers", async ({ authedPage: page }) => {
+    await page.goto("/#/evidence");
+
+    // 5. Refusal Validity Audit
+    const refusalCard = page.getByTestId("refusal-validity-card");
+    await expect(refusalCard).toBeVisible();
+    await expect(page.getByTestId("enrichment-ratio-value")).toContainText("×");
+    await expect(page.getByTestId("forced-error-refused-value")).toContainText("%");
+    await expect(page.getByTestId("forced-error-attr-value")).toContainText("%");
+    await expect(page.getByTestId("refusal-caveat-text")).toContainText(
+      "Refusal is calibrated against the simulator's own ambiguity flag; whether real ambiguity looks like ours is what real upay data would answer first."
+    );
+
+    // 6. Falsifiability & Robustness Stress-Testing
+    const falsifiabilityCard = page.getByTestId("falsifiability-card");
+    await expect(falsifiabilityCard).toBeVisible();
+    await expect(page.getByTestId("verdict-flip-rate-value")).toContainText("%");
+    await expect(page.getByTestId("pop-c-f1-value")).toContainText("%");
+    await expect(page.getByTestId("pop-c-refusal-value")).toContainText("%");
+    await expect(page.getByTestId("pilot-sample-size-value")).toContainText("wallets / arm");
+    await expect(page.getByTestId("falsifiability-caveat-text")).toContainText(
+      "Refusal is calibrated against the simulator's own ambiguity flag; whether real ambiguity looks like ours is what real upay data would answer first."
+    );
+  });
+
   test("mobile responsive view at 375px width", async ({ authedPage: page }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto("/#/evidence");
@@ -79,6 +121,8 @@ test.describe("Evidence & ML Rigor Page", () => {
     await expect(page.getByTestId("headline-f1-card")).toBeVisible();
     await expect(page.getByTestId("confusion-matrix-table")).toBeVisible();
     await expect(page.getByTestId("money-card")).toBeVisible();
+    await expect(page.getByTestId("refusal-validity-card")).toBeVisible();
+    await expect(page.getByTestId("falsifiability-card")).toBeVisible();
   });
 });
 

@@ -111,6 +111,19 @@ export default function Wallet({
     }));
   }, [wallet]);
 
+  // Sorted posterior causes for boundary metrics
+  const sortedPosterior = useMemo(() => {
+    if (!wallet) return [];
+    return (Object.entries(wallet.posterior) as [Cause, number][])
+      .sort((a, b) => b[1] - a[1]);
+  }, [wallet]);
+
+  const top1 = sortedPosterior[0] as [Cause, number] | undefined;
+  const top2 = sortedPosterior[1] as [Cause, number] | undefined;
+  const topProb = top1 ? top1[1] : 0;
+  const secondProb = top2 ? top2[1] : 0;
+  const topMargin = topProb - secondProb;
+
   // Feature contributions chart data
   const contributionData = useMemo(() => {
     if (!wallet) return [];
@@ -184,7 +197,9 @@ export default function Wallet({
   const isAttributed = wallet.verdict === "attributed";
   const remedy = wallet.cause ? bundle.remedies[wallet.cause] : null;
   const tau = bundle.meta.tau;
+  const delta = bundle.meta.delta;
   const tauPct = tau * 100;
+  const isNearBoundary = isAttributed && (topMargin < 0.15 || topProb < 0.90);
   const seriesLen = wallet.series.length;
   // The x-axis uses real week numbers, so take them from the series, not list positions.
   const silenceStartWeek = wallet.series[Math.max(0, seriesLen - wallet.weeks_silent)].week;
@@ -206,6 +221,11 @@ export default function Wallet({
               <Chip tone={isAttributed ? "accent" : "neutral"} data-testid="wallet-verdict-chip">
                 {isAttributed ? "Attributed" : "Refused"}
               </Chip>
+              {isNearBoundary && (
+                <Chip tone="warning" data-testid="boundary-badge">
+                  Near Boundary (ASSUMED)
+                </Chip>
+              )}
             </div>
             <p className="t-xs text-[var(--text-muted)] mt-0.5">
               Worker: <span className="capitalize text-[var(--text)] font-medium">{wallet.worker_type}</span> ·
@@ -273,6 +293,28 @@ export default function Wallet({
             </div>
           </div>
 
+          {/* Near Refusal Boundary Notice */}
+          {isNearBoundary && (
+            <div
+              className="p-3.5 rounded-[var(--radius)] bg-[var(--surface-2)] border border-[var(--warning)]/40 flex items-start gap-2.5 text-xs text-[var(--text)]"
+              data-testid="boundary-notice"
+            >
+              <span className="text-[var(--warning)] font-bold shrink-0 mt-0.5" aria-hidden="true">⚠️</span>
+              <div className="space-y-1">
+                <div className="font-semibold text-[var(--warning)]">
+                  Boundary Notice (ASSUMED threshold: top-2 margin &lt; 0.15 or prob &lt; 0.90)
+                </div>
+                <p className="text-[var(--text-muted)]">
+                  Near the refusal boundary — a small change in the decline shape would flip this verdict to refused.
+                </p>
+                <div className="flex flex-wrap gap-4 text-[11px] font-mono text-[var(--text-faint)] pt-0.5">
+                  <span>Top cause: <strong className="text-[var(--text)]">{topProb.toFixed(2)}</strong> (needs &ge; {tau.toFixed(2)})</span>
+                  <span>Margin: <strong className="text-[var(--text)]">{topMargin.toFixed(2)}</strong> (needs &ge; {delta.toFixed(2)})</span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Bilingual Message Preview */}
           <div className="p-4 rounded-[var(--radius)] bg-[var(--surface-2)] border border-[var(--border)] space-y-3">
             <div className="text-xs font-semibold text-[var(--text-muted)]">
@@ -294,7 +336,7 @@ export default function Wallet({
 
           <div className="text-xs text-[var(--text-faint)] flex items-center justify-between">
             <span>Remedy Code: <code className="font-mono text-[var(--text)] font-semibold">{remedy.remedy_code}</code></span>
-            <span>Refusal check passed: Max posterior &ge; {tau} &amp; top-2 margin &ge; {bundle.meta.delta}</span>
+            <span>Refusal check passed: Max posterior &ge; {tau} &amp; top-2 margin &ge; {delta}</span>
           </div>
         </Card>
       ) : (
@@ -303,7 +345,7 @@ export default function Wallet({
           <div className="w-14 h-14 rounded-full bg-[var(--surface-2)] text-[var(--text-muted)] mx-auto grid place-items-center shadow-[var(--shadow-1)]" aria-hidden="true">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="8" x2="12" />
               <line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
           </div>
@@ -313,7 +355,7 @@ export default function Wallet({
               No attributable cause. I will not spend your money here.
             </h2>
             <p className="text-xs sm:text-sm text-[var(--text-muted)] max-w-xl mx-auto mt-2">
-              The transaction decline shape for this wallet does not meet our strict calibration thresholds (τ={tau}, δ={bundle.meta.delta}).
+              The transaction decline shape for this wallet does not meet our strict calibration thresholds (τ={tau}, δ={delta}).
               Sending uncalibrated generic messages will waste budget and risk driving user opt-outs.
             </p>
           </div>
@@ -331,6 +373,83 @@ export default function Wallet({
                 </li>
               ))}
             </ul>
+          </div>
+
+          {/* What would change this verdict (Boundary Transparency) */}
+          <div
+            className="max-w-lg mx-auto p-4 rounded-[var(--radius)] bg-[var(--surface-2)] border border-[var(--border)] text-left space-y-3"
+            data-testid="what-would-change-block"
+          >
+            <div className="flex items-center justify-between">
+              <div className="text-xs font-semibold uppercase tracking-wider text-[var(--text-faint)]">
+                What Would Change This Verdict
+              </div>
+              <span className="text-[10px] font-mono text-[var(--text-faint)] uppercase">Read-only</span>
+            </div>
+
+            <p className="text-xs text-[var(--text-muted)]">
+              Distance from calibrated attribution thresholds (<code className="font-mono text-[var(--text)]">τ={tau}</code>, <code className="font-mono text-[var(--text)]">δ={delta}</code>):
+            </p>
+
+            <div className="space-y-2.5 text-xs">
+              {/* Top Cause Bar */}
+              <div className="p-2.5 rounded-[var(--radius-sm)] bg-[var(--surface)] border border-[var(--border)]" data-testid="boundary-prob-metric">
+                <div className="flex items-center justify-between text-[11px] font-medium mb-1">
+                  <span className="text-[var(--text)]">
+                    Top cause{top1 ? ` (${CAUSE_LABELS[top1[0]]})` : ""}: <strong className="font-mono text-[var(--accent)]">{topProb.toFixed(2)}</strong>
+                  </span>
+                  <span className="font-mono text-[var(--text-muted)]" data-testid="tau-target">
+                    needs &ge; {tau.toFixed(2)}
+                  </span>
+                </div>
+                <div className="w-full bg-[var(--surface-3)] h-2 rounded-full overflow-hidden relative" role="progressbar" aria-valuenow={Math.round(topProb * 100)} aria-valuemin={0} aria-valuemax={100} aria-label={`Top cause probability ${topProb.toFixed(2)} of needed ${tau.toFixed(2)}`}>
+                  <div
+                    className={`h-full ${topProb >= tau ? "bg-[var(--accent)]" : "bg-[var(--warning)]"}`}
+                    style={{ width: `${Math.min(100, Math.max(0, topProb * 100))}%` }}
+                  />
+                  <div
+                    className="absolute top-0 bottom-0 w-0.5 bg-[var(--danger)]"
+                    style={{ left: `${Math.min(100, tau * 100)}%` }}
+                    title={`τ threshold = ${tau}`}
+                  />
+                </div>
+                <div className="flex justify-between items-center text-[10px] text-[var(--text-faint)] mt-1">
+                  <span>{topProb < tau ? `Shortfall: -${(tau - topProb).toFixed(2)}` : "Meets τ threshold"}</span>
+                  <span>Threshold τ = {tau.toFixed(2)}</span>
+                </div>
+              </div>
+
+              {/* Top-2 Margin Bar */}
+              <div className="p-2.5 rounded-[var(--radius-sm)] bg-[var(--surface)] border border-[var(--border)]" data-testid="boundary-margin-metric">
+                <div className="flex items-center justify-between text-[11px] font-medium mb-1">
+                  <span className="text-[var(--text)]">
+                    Margin{top1 && top2 ? ` (${CAUSE_LABELS[top1[0]]} vs ${CAUSE_LABELS[top2[0]]})` : ""}: <strong className="font-mono text-[var(--accent)]">{topMargin.toFixed(2)}</strong>
+                  </span>
+                  <span className="font-mono text-[var(--text-muted)]" data-testid="delta-target">
+                    needs &ge; {delta.toFixed(2)}
+                  </span>
+                </div>
+                <div className="w-full bg-[var(--surface-3)] h-2 rounded-full overflow-hidden relative" role="progressbar" aria-valuenow={Math.round(topMargin * 100)} aria-valuemin={0} aria-valuemax={100} aria-label={`Top-2 margin ${topMargin.toFixed(2)} of needed ${delta.toFixed(2)}`}>
+                  <div
+                    className={`h-full ${topMargin >= delta ? "bg-[var(--accent)]" : "bg-[var(--warning)]"}`}
+                    style={{ width: `${Math.min(100, Math.max(0, topMargin * 100))}%` }}
+                  />
+                  <div
+                    className="absolute top-0 bottom-0 w-0.5 bg-[var(--danger)]"
+                    style={{ left: `${Math.min(100, delta * 100)}%` }}
+                    title={`δ threshold = ${delta}`}
+                  />
+                </div>
+                <div className="flex justify-between items-center text-[10px] text-[var(--text-faint)] mt-1">
+                  <span>{topMargin < delta ? `Shortfall: -${(delta - topMargin).toFixed(2)}` : "Meets δ threshold"}</span>
+                  <span>Threshold δ = {delta.toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+
+            <p className="text-[11px] text-[var(--text-muted)] italic">
+              A stronger decline signal (resolving hypothesis ambiguity or exceeding τ={tau}) is required before money can be safely allocated to a targeted remedy.
+            </p>
           </div>
           {/* Note: No action buttons rendered for refused wallets as per spec */}
         </Card>

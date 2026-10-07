@@ -1,4 +1,14 @@
 import json
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from src.rules.money import ASSUMPTIONS, break_even_rates, money_sweep, money_table
+from src.rules.remedies import REMEDIES
+from src.rules.routing import routing_plan
 
 
 def generate_sample_seed():
@@ -8,43 +18,22 @@ def generate_sample_seed():
         "to distribution shift in simulation, not real-world accuracy."
     )
 
-    remedies = {
-        "job_exit": {
-            "remedy_code": "REM_JOB_PAUSE",
-            "label": "Pause payroll deductions & hold wallet active",
-            "unit_cost_bdt": 5.0,
-            "message_en": "We noticed your salary account is quiet. Your wallet is kept active with zero maintenance fees until your next payroll starts.",
-            "message_bn": "আপনার বেতন একাউন্ট নিষ্ক্রিয় দেখাচ্ছে। পরবর্তী বেতন চালু না হওয়া পর্যন্ত শূন্য ফি-তে আপনার একাউন্ট সক্রিয় রাখা হয়েছে।"
-        },
-        "migration": {
-            "remedy_code": "REM_MIG_ROAM",
-            "label": "Location-aware agent referral & regional network",
-            "unit_cost_bdt": 3.5,
-            "message_en": "Moved to a new area? Find verified cash-in/cash-out agents near your new location with zero roaming surcharge.",
-            "message_bn": "নতুন এলাকায় গেছেন? কোনো অতিরিক্ত চার্জ ছাড়াই আপনার আশেপাশের অনুমোদিত এজেন্ট খুঁজুন ও লেনদেন করুন।"
-        },
-        "solved_problem": {
-            "remedy_code": "REM_NO_ACTION",
-            "label": "No action (Zero spend)",
-            "unit_cost_bdt": 0.0,
-            "message_en": "Thank you for using our service. Your wallet remains ready whenever you need it.",
-            "message_bn": "আমাদের সেবা ব্যবহারের জন্য ধন্যবাদ। আপনার প্রয়োজনে যেকোনো সময় ওয়ালেটটি ব্যবহার করতে পারেন।"
-        },
-        "fee_shock": {
-            "remedy_code": "REM_FEE_WAIVER",
-            "label": "Fee discount voucher on next 3 cash-outs",
-            "unit_cost_bdt": 15.0,
-            "message_en": "Enjoy 50% cash-out fee rebate on your next 3 transactions. Valid for the next 30 days.",
-            "message_bn": "আপনার পরবর্তী ৩টি ক্যাশআউটে ৫০% ফি রিবেট উপভোগ করুন। মেয়াদ ৩০ দিন।"
-        },
-        "supply_failure": {
-            "remedy_code": "REM_AGENT_ALERT",
-            "label": "Agent liquidity routing & merchant status alert",
-            "unit_cost_bdt": 2.0,
-            "message_en": "We resolved recent cash-in/out bottlenecks in your union. Nearby agents now have guaranteed liquidity.",
-            "message_bn": "আপনার এলাকার এজেন্ট পয়েন্টের তারল্য সমস্যা সমাধান করা হয়েছে। নিকটস্থ এজেন্ট থেকে নির্বিঘ্নে লেনদেন করুন।"
-        }
+    remedies = REMEDIES
+
+    sample_per_cause = {
+        "job_exit": {"correct": 380, "wrong": 82},
+        "migration": {"correct": 340, "wrong": 92},
+        "solved_problem": {"correct": 410, "wrong": 52},
+        "fee_shock": {"correct": 365, "wrong": 75},
+        "supply_failure": {"correct": 355, "wrong": 69},
     }
+    sample_n_refused = 735
+    sample_n_triaged = 3000
+
+    money = money_table(sample_per_cause, sample_n_refused, sample_n_triaged)
+    break_even = break_even_rates()
+    sweep = money_sweep(sample_per_cause, sample_n_refused, sample_n_triaged)
+    routing_plans = {str(rate): routing_plan(rate=rate) for rate in (0.01, 0.04, 0.08)}
 
     report = {
         "ml": {
@@ -57,8 +46,19 @@ def generate_sample_seed():
             "shuffled_label_f1_b": 0.201,
             "best_single_feature": "post_fee_cashout_ratio",
             "best_single_feature_f1_b": 0.384,
-            "rule_baseline_f1_b": 0.221
+            "rule_baseline_f1_b": 0.221,
+            "refusal_validity": {
+                "refusal_rate_blended": 0.402,
+                "refusal_rate_clean": 0.205,
+                "enrichment_ratio": 1.959,
+                "forced_error_refused": 0.467,
+                "forced_error_attributed": 0.121,
+            },
+            "verdict_flip_rate": 0.199,
         },
+        "population_c": {"macro_f1": 0.766, "refusal_rate": 0.269, "n_wallets": 3000},
+        "pilot": {"alpha": 0.05, "power": 0.8, "n_per_arm": 424, "n_arms": 3, "total_wallets": 1272,
+                  "generic_factor": 0.25, "benchmark_rate": 0.04},
         "confusion_b": {
             "labels": ["job_exit", "migration", "solved_problem", "fee_shock", "supply_failure"],
             "matrix": [
@@ -78,25 +78,30 @@ def generate_sample_seed():
             {"slice": "pay_cycle", "group": "biweekly", "n": 750, "macro_f1": 0.679, "refusal_rate": 0.251},
             {"slice": "pay_cycle", "group": "monthly", "n": 1200, "macro_f1": 0.686, "refusal_rate": 0.246}
         ],
-        "money": [
-            {"recovery_rate": 0.01, "strategy": "rule", "wallets_actioned": 1270000, "users_recovered": 5080, "cost_bdt": 2540000, "value_bdt": 254000},
-            {"recovery_rate": 0.01, "strategy": "model", "wallets_actioned": 965200, "users_recovered": 7721, "cost_bdt": 3860800, "value_bdt": 386000},
-            {"recovery_rate": 0.01, "strategy": "oracle", "wallets_actioned": 1270000, "users_recovered": 12700, "cost_bdt": 5080000, "value_bdt": 1905000},
-            {"recovery_rate": 0.04, "strategy": "rule", "wallets_actioned": 1270000, "users_recovered": 20320, "cost_bdt": 2540000, "value_bdt": 8636000},
-            {"recovery_rate": 0.04, "strategy": "model", "wallets_actioned": 965200, "users_recovered": 38608, "cost_bdt": 3860800, "value_bdt": 21000000},
-            {"recovery_rate": 0.04, "strategy": "oracle", "wallets_actioned": 1270000, "users_recovered": 50800, "cost_bdt": 5080000, "value_bdt": 22860000},
-            {"recovery_rate": 0.08, "strategy": "rule", "wallets_actioned": 1270000, "users_recovered": 40640, "cost_bdt": 2540000, "value_bdt": 19812000},
-            {"recovery_rate": 0.08, "strategy": "model", "wallets_actioned": 965200, "users_recovered": 77216, "cost_bdt": 3860800, "value_bdt": 46000000},
-            {"recovery_rate": 0.08, "strategy": "oracle", "wallets_actioned": 1270000, "users_recovered": 101600, "cost_bdt": 5080000, "value_bdt": 50800000}
+        "money": money,
+        "break_even": break_even,
+        "sweep": sweep,
+        "routing_plan": routing_plans,
+        "assumptions": ASSUMPTIONS,
+        "calibration_bins": [
+            {"bin": 0, "mean_confidence": 0.05, "empirical_accuracy": 0.0, "n": 0},
+            {"bin": 1, "mean_confidence": 0.15, "empirical_accuracy": 0.0, "n": 0},
+            {"bin": 2, "mean_confidence": 0.25, "empirical_accuracy": 0.2, "n": 1},
+            {"bin": 3, "mean_confidence": 0.35, "empirical_accuracy": 0.33, "n": 1},
+            {"bin": 4, "mean_confidence": 0.45, "empirical_accuracy": 0.4, "n": 2},
+            {"bin": 5, "mean_confidence": 0.55, "empirical_accuracy": 0.5, "n": 2},
+            {"bin": 6, "mean_confidence": 0.65, "empirical_accuracy": 0.67, "n": 3},
+            {"bin": 7, "mean_confidence": 0.75, "empirical_accuracy": 0.75, "n": 4},
+            {"bin": 8, "mean_confidence": 0.85, "empirical_accuracy": 0.83, "n": 3},
+            {"bin": 9, "mean_confidence": 0.95, "empirical_accuracy": 0.92, "n": 4},
         ],
-        "assumptions": [
-            "Dormant base modelled at 3.63m wallets; triage rate ASSUMED at 35% (1.27m wallets)",
-            "Base recovery rate ASSUMED at 4.0% with sensitivity sweep across 1.0% and 8.0%",
-            "Annual ARPU ASSUMED at BDT 550 per recovered active user with 12-month value ramp",
-            "Generic SMS reminder cost ASSUMED at BDT 2.00 per message",
-            "Remedy unit costs ASSUMED: job_exit BDT 5.0, migration BDT 3.5, solved_problem BDT 0.0, fee_shock BDT 15.0, supply_failure BDT 2.0",
-            "Rule baseline recovers at generic factor of 40% relative to cause-targeted remedy"
-        ]
+        "per_cause_f1_b": [
+            {"cause": "job_exit", "precision": 0.88, "recall": 0.92, "f1": 0.9, "support": 5},
+            {"cause": "migration", "precision": 0.9, "recall": 0.85, "f1": 0.87, "support": 4},
+            {"cause": "solved_problem", "precision": 0.86, "recall": 0.93, "f1": 0.89, "support": 3},
+            {"cause": "fee_shock", "precision": 0.84, "recall": 0.78, "f1": 0.81, "support": 4},
+            {"cause": "supply_failure", "precision": 0.91, "recall": 0.86, "f1": 0.88, "support": 4},
+        ],
     }
 
     # Helper to generate 26-week series

@@ -61,12 +61,24 @@ def test_each_wallet_matches_contract(bundle: dict):
 
 def test_report_and_remedies(bundle: dict):
     report = bundle["report"]
-    assert set(report) == {"ml", "confusion_b", "fairness", "money", "money_inputs", "assumptions", "refusal_sweep", "depth"}
+    assert set(report) == {
+        "ml", "confusion_b", "fairness", "calibration_bins", "per_cause_f1_b", "money", "money_inputs", "break_even", "sweep", "routing_plan", "assumptions",
+        "population_c", "pilot", "refusal_sweep", "depth",
+    }
     assert report["depth"]["coverage"]["operating_point"]["macro_f1"] == report["ml"]["macro_f1_b"]
     assert report["ml"]["macro_f1_b"] > report["ml"]["rule_baseline_f1_b"]
-    assert len(report["money"]) == 9
+    assert len(report["calibration_bins"]) == 10
+    assert len(report["per_cause_f1_b"]) == len(CAUSE_SET)
+    assert report["population_c"] and report["population_c"]["n_wallets"] == 3000
+    assert report["pilot"] and report["pilot"]["n_per_arm"] == 424
+    assert len(report["money"]) == 12
     assert {(r["strategy"], r["recovery_rate"]) for r in report["money"]} == {
-        (s, r) for s in ("rule", "model", "oracle") for r in (0.01, 0.04, 0.08)}
+        (s, r) for s in ("rule", "model", "oracle", "routed") for r in (0.01, 0.04, 0.08)}
+    assert set(report["break_even"].keys()) == CAUSE_SET
+    assert report["break_even"]["solved_problem"] is None
+    assert len(report["sweep"]) == 36
+    assert {r["cost_scale"] for r in report["sweep"]} == {0.5, 1.0, 1.5}
+    assert report["routing_plan"] and set(report["routing_plan"].keys()) == {"0.01", "0.04", "0.08"}
     assert report["assumptions"] and all("ASSUMED" in a for a in report["assumptions"])
     assert set(bundle["remedies"]) == CAUSE_SET
 
@@ -82,8 +94,17 @@ def test_refusal_sweep_contains_the_shipped_operating_point(bundle: dict):
 def test_money_inputs_rebuild_the_money_table(bundle: dict):
     m = bundle["report"]["money_inputs"]
     assert m["n_correct"] + m["n_wrong"] + m["n_refused"] == m["n_triaged"] == 3000
+    # money_table uses cause-specific unit costs and skips solved_problem, so the model row
+    # rebuilds from the per-cause breakdown, not the flat average (kept for the aggregate view).
+    assert set(m["per_cause"]) == CAUSE_SET and set(m["unit_costs_bdt"]) == CAUSE_SET
     model = {r["recovery_rate"]: r for r in bundle["report"]["money"] if r["strategy"] == "model"}
     for rate, row in model.items():
-        recovered = m["n_correct"] * rate + m["n_wrong"] * rate * m["generic_factor"]
-        cost = (m["n_triaged"] - m["n_refused"]) * m["avg_remedy_cost_bdt"]
+        recovered = sum(
+            c["correct"] * rate + c["wrong"] * rate * m["generic_factor"]
+            for cause, c in m["per_cause"].items() if cause != "solved_problem"
+        )
+        cost = sum(
+            (c["correct"] + c["wrong"]) * m["unit_costs_bdt"][cause]
+            for cause, c in m["per_cause"].items() if cause != "solved_problem"
+        )
         assert recovered * m["arpu_bdt"] * m["ramp"] - cost == pytest.approx(row["value_bdt"], abs=0.5)

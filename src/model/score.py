@@ -62,4 +62,5 @@ def save(booster: lgb.Booster, meta: dict, out: Path = ARTIFACTS) -> None:
 def load(art: Path = ARTIFACTS) -> tuple[lgb.Booster, dict]:
     """Model + meta (tau, delta, version), read once per process."""
     meta = json.loads((art / "meta.json").read_text(encoding="utf-8"))
-    return lgb.Booster(model_file=str(art / "model.txt")), meta
+    model_str = (art / "model.txt").read_text(encoding="utf-8").replace("\r\n", "\n")
+    return lgb.Booster(model_str=model_str), meta

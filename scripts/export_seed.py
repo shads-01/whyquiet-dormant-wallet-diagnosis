@@ -21,8 +21,15 @@ if str(ROOT) not in sys.path:
 from datagen.generate import main as generate
 from scripts.depth import depth
 from scripts.evaluate import _split, refusal_sweep, report
+from scripts.pilot_sample_size import (
+    ALPHA,
+    GENERIC_FACTOR,
+    POWER,
+    calculate_sample_size_two_proportion,
+)
+from scripts.population_c import evaluate_population_c
 from src.model.score import explain, predict, save
-from src.model.train import ACCURACY_FLOOR, train
+from src.model.train import ACCURACY_FLOOR, CAUSES, train
 from src.rules.baseline import rule_baseline
 from src.rules.remedies import REMEDIES
 
@@ -109,14 +116,42 @@ def export(seed: int, root: Path = ROOT, out: Path = ROOT / "web" / "public" / "
         })
 
     rep = report(seed, root)
-    n_correct = sum(c == t for c, t in zip(causes, truth))
+    pop_c = evaluate_population_c(seed, root)
+    n_per_arm_4pct = calculate_sample_size_two_proportion(0.04 * GENERIC_FACTOR, 0.04, ALPHA, POWER)
+    pilot_block = {
+        "alpha": ALPHA,
+        "power": POWER,
+        "n_per_arm": n_per_arm_4pct,
+        "n_arms": 3,
+        "total_wallets": n_per_arm_4pct * 3,
+        "generic_factor": GENERIC_FACTOR,
+        "benchmark_rate": 0.04,
+    }
+    per_cause = {
+        c: {
+            "correct": sum(1 for p, t in zip(causes, truth) if p == c and t == c),
+            "wrong": sum(1 for p, t in zip(causes, truth) if p == c and t != c),
+        }
+        for c in CAUSES
+    }
+    n_correct = sum(1 for p, t in zip(causes, truth) if p == t and p is not None)
+    n_wrong = len(truth) - n_refused - n_correct
     try:
-        from src.rules.money import ASSUMPTIONS, money_inputs, money_table
-        n_wrong = len(truth) - n_refused - n_correct
-        money = money_table(len(truth), n_correct, n_wrong, n_refused)
-        inputs = money_inputs(len(truth), n_correct, n_wrong, n_refused)
+        from src.rules.money import (
+            ASSUMPTIONS,
+            break_even_rates,
+            money_inputs,
+            money_sweep,
+            money_table,
+        )
+        from src.rules.routing import routing_plan
+        money = money_table(per_cause, n_refused, len(truth))
+        break_even = break_even_rates()
+        sweep = money_sweep(per_cause, n_refused, len(truth))
+        routing_plans = {str(rate): routing_plan(rate=rate) for rate in (0.01, 0.04, 0.08)}
+        inputs = money_inputs(len(truth), n_correct, n_wrong, n_refused, per_cause)
     except ImportError:  # plan: carry on with money = null if the rules module is not ready
-        money, inputs, ASSUMPTIONS = None, None, []
+        money, break_even, sweep, routing_plans, inputs, ASSUMPTIONS = None, None, None, None, None, []
 
     bundle = _round({
         "meta": {
@@ -129,8 +164,19 @@ def export(seed: int, root: Path = ROOT, out: Path = ROOT / "web" / "public" / "
             "honesty_line": HONESTY_LINE,
         },
         "wallets": sample,
-        "report": {**rep, "money": money, "money_inputs": inputs, "assumptions": ASSUMPTIONS + MODEL_ASSUMPTIONS,
-                   "refusal_sweep": refusal_sweep(predict(booster, X)[0], truth), "depth": depth(seed, root)},
+        "report": {
+            **rep,
+            "population_c": pop_c,
+            "pilot": pilot_block,
+            "money": money,
+            "money_inputs": inputs,
+            "break_even": break_even,
+            "sweep": sweep,
+            "routing_plan": routing_plans,
+            "assumptions": ASSUMPTIONS + MODEL_ASSUMPTIONS,
+            "refusal_sweep": refusal_sweep(predict(booster, X)[0], truth),
+            "depth": depth(seed, root),
+        },
         "remedies": REMEDIES,
     })
     out.parent.mkdir(parents=True, exist_ok=True)

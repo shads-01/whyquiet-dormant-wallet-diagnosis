@@ -42,19 +42,22 @@ def test_seed_sample_bundle():
     for row in report["confusion_b"]["matrix"]:
         assert len(row) == 5
 
+    assert "calibration_bins" in report and len(report["calibration_bins"]) == 10
+    assert "per_cause_f1_b" in report and len(report["per_cause_f1_b"]) == 5
+
     assert len(report["fairness"]) >= 7
     slices = {item["slice"] for item in report["fairness"]}
     assert "worker_type" in slices
     assert "pay_cycle" in slices
 
-    # Money rows: 9 rows
+    # Money rows: 12 rows (4 strategies x 3 recovery rates)
     money = report["money"]
     assert money is not None
-    assert len(money) == 9
+    assert len(money) == 12
     rates = {row["recovery_rate"] for row in money}
     strategies = {row["strategy"] for row in money}
     assert rates == {0.01, 0.04, 0.08}
-    assert strategies == {"rule", "model", "oracle"}
+    assert strategies == {"rule", "model", "oracle", "routed"}
 
     # 4. Wallets verification: exactly 20
     wallets = data["wallets"]

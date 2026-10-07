@@ -1,0 +1,44 @@
+{
+  "metadata": {
+    "latest_bb_month": "2025-02",
+    "industry_registered_customers": 239240000,
+    "industry_active_accounts": 87154000,
+    "industry_inactive_share": 0.6357,
+    "upay_customer_base": 7000000,
+    "upay_customer_status": "STALE (late 2022), registered-not-active",
+    "upay_source_url": "https://www.tbsnews.net/economy/mfs/we-seek-build-secure-affordable-mfs-ecosystem-through-innovations-549442",
+    "bb_source_url": "https://www.bb.org.bd/en/index.php/financialactivity/mfsdata",
+    "active_definition": "Transaction made in last 3 (Three) months per Bangladesh Bank definition.",
+    "caveats": [
+      "Bangladesh Bank publishes industry-wide figures only, with no per-operator data. Upay's share and base are therefore ASSUMED.",
+      "The inactive share is a proxy: registered accounts are not unique individuals (multi-account ownership is widespread), making this an upper bound on dormancy rather than a true individual dormancy rate.",
+      "The data are public aggregates and do not touch synthetic training/evaluation populations A and B."
+    ]
+  },
+  "scenarios": [
+    {
+      "scenario": "Conservative (50%)",
+      "is_central": false,
+      "inactive_share": 0.5,
+      "upay_customers": 7000000,
+      "dormant_wallets": 3500000,
+      "provenance": "ASSUMED:https://www.tbsnews.net/economy/mfs/we-seek-build-secure-affordable-mfs-ecosystem-through-innovations-549442"
+    },
+    {
+      "scenario": "Industry Central (63.57%)",
+      "is_central": true,
+      "inactive_share": 0.6357,
+      "upay_customers": 7000000,
+      "dormant_wallets": 4449933,
+      "provenance": "ASSUMED (Base:https://www.tbsnews.net/economy/mfs/we-seek-build-secure-affordable-mfs-ecosystem-through-innovations-549442 | Rate:https://www.bb.org.bd/en/index.php/financialactivity/mfsdata)"
+    },
+    {
+      "scenario": "Aggressive (75%)",
+      "is_central": false,
+      "inactive_share": 0.75,
+      "upay_customers": 7000000,
+      "dormant_wallets": 5250000,
+      "provenance": "ASSUMED:https://www.tbsnews.net/economy/mfs/we-seek-build-secure-affordable-mfs-ecosystem-through-innovations-549442"
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "n_train": 400,
+  "n_test": 150,
+  "model": "softmax regression 16x16",
+  "heldout_accuracy": 0.32,
+  "chance": 0.1
+}
