@@ -1,4 +1,4 @@
-"""Inference only: predict, refuse, explain. No sklearn, so the serverless API can import it (D52)."""
+"""Inference only: predict, refuse, explain. No sklearn, so the serverless API can import it (D55)."""
 
 import json
 from functools import cache

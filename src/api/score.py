@@ -1,4 +1,4 @@
-"""POST /api/score: live triage of ledger extracts with the same model as seed.json (D52)."""
+"""POST /api/score: live triage of ledger extracts with the same model as seed.json (D55)."""
 
 import hmac
 import os

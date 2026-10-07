@@ -1,4 +1,4 @@
-"""POST /api/score (D52): same model as seed.json, auth, refusals before the model, validation."""
+"""POST /api/score (D55): same model as seed.json, auth, refusals before the model, validation."""
 
 import json
 from pathlib import Path

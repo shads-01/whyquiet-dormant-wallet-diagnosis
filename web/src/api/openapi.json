@@ -669,10 +669,152 @@
         }
       }
     },
+    "/api/v1/reengage/diagnose-and-allocate": {
+      "post": {
+        "tags": [
+          "Re-engagement Causal Engine"
+        ],
+        "summary": "Diagnose And Allocate Single",
+        "description": "Diagnose a single dormant wallet, estimate uplift, allocate remedy, and generate message.",
+        "operationId": "diagnose_and_allocate_single_api_v1_reengage_diagnose_and_allocate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SingleWalletRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SingleWalletResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/campaign/plan": {
+      "post": {
+        "tags": [
+          "Re-engagement Causal Engine"
+        ],
+        "summary": "Plan Campaign Batch",
+        "description": "Run budget-constrained Lagrangian allocation across a sample cohort.",
+        "operationId": "plan_campaign_batch_api_v1_campaign_plan_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CampaignPlanRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignPlanResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/metrics/summary": {
+      "get": {
+        "tags": [
+          "Re-engagement Causal Engine"
+        ],
+        "summary": "Get Metrics Summary",
+        "description": "Retrieve headline system accuracy and economic waste metrics.",
+        "operationId": "get_metrics_summary_api_v1_metrics_summary_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ops/tickets": {
+      "get": {
+        "tags": [
+          "Re-engagement Causal Engine"
+        ],
+        "summary": "Get Ops Tickets",
+        "description": "Retrieve active agent float and cashout resolution tickets.",
+        "operationId": "get_ops_tickets_api_v1_ops_tickets_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/health": {
       "get": {
         "summary": "Health",
         "operationId": "health_api_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health",
+        "operationId": "health_health_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -868,6 +1010,96 @@
           "rejected"
         ],
         "title": "BatchStatus"
+      },
+      "CampaignPlanRequest": {
+        "properties": {
+          "budget_bdt": {
+            "type": "number",
+            "minimum": 1000.0,
+            "title": "Budget Bdt",
+            "default": 500000.0
+          },
+          "wallet_sample_size": {
+            "type": "integer",
+            "maximum": 50000.0,
+            "minimum": 10.0,
+            "title": "Wallet Sample Size",
+            "default": 1000
+          }
+        },
+        "type": "object",
+        "title": "CampaignPlanRequest"
+      },
+      "CampaignPlanResponse": {
+        "properties": {
+          "budget_bdt": {
+            "type": "number",
+            "title": "Budget Bdt"
+          },
+          "total_spend_bdt": {
+            "type": "number",
+            "title": "Total Spend Bdt"
+          },
+          "budget_utilization_rate": {
+            "type": "number",
+            "title": "Budget Utilization Rate"
+          },
+          "total_wallets_evaluated": {
+            "type": "integer",
+            "title": "Total Wallets Evaluated"
+          },
+          "total_wallets_targeted": {
+            "type": "integer",
+            "title": "Total Wallets Targeted"
+          },
+          "total_wallets_suppressed": {
+            "type": "integer",
+            "title": "Total Wallets Suppressed"
+          },
+          "expected_incremental_reactivations": {
+            "type": "number",
+            "title": "Expected Incremental Reactivations"
+          },
+          "expected_incremental_revenue_bdt": {
+            "type": "number",
+            "title": "Expected Incremental Revenue Bdt"
+          },
+          "cost_per_incremental_reactivation_bdt": {
+            "type": "number",
+            "title": "Cost Per Incremental Reactivation Bdt"
+          },
+          "wasted_spend_rate": {
+            "type": "number",
+            "title": "Wasted Spend Rate"
+          },
+          "shadow_price_lambda": {
+            "type": "number",
+            "title": "Shadow Price Lambda"
+          },
+          "arm_breakdown": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Arm Breakdown"
+          }
+        },
+        "type": "object",
+        "required": [
+          "budget_bdt",
+          "total_spend_bdt",
+          "budget_utilization_rate",
+          "total_wallets_evaluated",
+          "total_wallets_targeted",
+          "total_wallets_suppressed",
+          "expected_incremental_reactivations",
+          "expected_incremental_revenue_bdt",
+          "cost_per_incremental_reactivation_bdt",
+          "wasted_spend_rate",
+          "shadow_price_lambda",
+          "arm_breakdown"
+        ],
+        "title": "CampaignPlanResponse"
       },
       "CauseFamily": {
         "type": "string",
@@ -1376,6 +1608,154 @@
           "remedy"
         ],
         "title": "ScoreResult"
+      },
+      "SingleWalletRequest": {
+        "properties": {
+          "wallet_id": {
+            "type": "string",
+            "title": "Wallet Id",
+            "description": "Pseudonymous wallet identifier",
+            "default": "W-001234"
+          },
+          "features": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Features",
+            "description": "Wallet behavioral and transaction features"
+          },
+          "dnd_registered": {
+            "type": "boolean",
+            "title": "Dnd Registered",
+            "default": false
+          },
+          "blocklisted": {
+            "type": "boolean",
+            "title": "Blocklisted",
+            "default": false
+          },
+          "language": {
+            "type": "string",
+            "title": "Language",
+            "description": "'bn' or 'en'",
+            "default": "bn"
+          }
+        },
+        "type": "object",
+        "required": [
+          "features"
+        ],
+        "title": "SingleWalletRequest"
+      },
+      "SingleWalletResponse": {
+        "properties": {
+          "wallet_id": {
+            "type": "string",
+            "title": "Wallet Id"
+          },
+          "diagnosed_cause": {
+            "type": "string",
+            "title": "Diagnosed Cause"
+          },
+          "is_attributed": {
+            "type": "boolean",
+            "title": "Is Attributed"
+          },
+          "confidence": {
+            "type": "number",
+            "title": "Confidence"
+          },
+          "margin": {
+            "type": "number",
+            "title": "Margin"
+          },
+          "abstain_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Abstain Reason"
+          },
+          "evidence_reasons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Evidence Reasons"
+          },
+          "causal_segment": {
+            "type": "string",
+            "title": "Causal Segment"
+          },
+          "assigned_arm": {
+            "type": "string",
+            "title": "Assigned Arm"
+          },
+          "arm_name": {
+            "type": "string",
+            "title": "Arm Name"
+          },
+          "cost_bdt": {
+            "type": "number",
+            "title": "Cost Bdt"
+          },
+          "expected_incremental_lift": {
+            "type": "number",
+            "title": "Expected Incremental Lift"
+          },
+          "is_safe_to_contact": {
+            "type": "boolean",
+            "title": "Is Safe To Contact"
+          },
+          "suppression_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suppression Reason"
+          },
+          "rendered_message": {
+            "type": "string",
+            "title": "Rendered Message"
+          },
+          "channel": {
+            "type": "string",
+            "title": "Channel"
+          },
+          "decision_trace": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Decision Trace"
+          }
+        },
+        "type": "object",
+        "required": [
+          "wallet_id",
+          "diagnosed_cause",
+          "is_attributed",
+          "confidence",
+          "margin",
+          "abstain_reason",
+          "evidence_reasons",
+          "causal_segment",
+          "assigned_arm",
+          "arm_name",
+          "cost_bdt",
+          "expected_incremental_lift",
+          "is_safe_to_contact",
+          "suppression_reason",
+          "rendered_message",
+          "channel",
+          "decision_trace"
+        ],
+        "title": "SingleWalletResponse"
       },
       "SmsStatus": {
         "properties": {

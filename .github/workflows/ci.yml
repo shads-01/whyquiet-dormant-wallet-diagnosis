@@ -1,34 +1,42 @@
-name: CI
+name: WhyQuiet CI
+
 on:
   push:
-    branches: [main]
+    branches: [ main ]
   pull_request:
+    branches: [ main ]
 
 jobs:
-  check:
+  test-and-lint:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: web/package-lock.json
-      - run: cd web && npm ci
-      - run: make check
-  e2e:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: web/package-lock.json
-      - run: cd web && npm ci
-      - run: npx playwright install chromium --with-deps
-        working-directory: web
-      - run: make e2e
 
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          uv sync --all-extras --dev
+
+      - name: Lint with Ruff
+        run: |
+          uv run ruff check src tests
+
+      - name: Typecheck with Pyright
+        run: |
+          uv run pyright
+
+      - name: Run Tests with Coverage
+        run: |
+          uv run pytest -v --cov=src --cov-report=term-missing

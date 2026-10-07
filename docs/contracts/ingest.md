@@ -1,6 +1,6 @@
 # Contract 3 — Ledger ingest (live scoring)
 
-> Owner: `src/api/score.py` (D52). Machine-readable source of truth: `ScoreRequest` in the live OpenAPI at
+> Owner: `src/api/score.py` (D55). Machine-readable source of truth: `ScoreRequest` in the live OpenAPI at
 > `/api/docs`. Sample file: `web/public/sample-ledger.csv` (20 synthetic population B wallets).
 
 ## What upay sends

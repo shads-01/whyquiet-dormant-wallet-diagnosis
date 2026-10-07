@@ -1,4 +1,4 @@
-"""Score a ledger extract offline with the same code as POST /api/score, and report throughput (D52).
+"""Score a ledger extract offline with the same code as POST /api/score, and report throughput (D55).
 
 Input: flat CSV or Parquet, one row per wallet-week (docs/contracts/ingest.md), e.g. web/public/sample-ledger.csv.
 Output: .json (full results) or .csv (one row per wallet).

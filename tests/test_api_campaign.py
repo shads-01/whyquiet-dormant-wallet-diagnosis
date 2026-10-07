@@ -1,4 +1,4 @@
-"""Campaign webhook on approve, redeliver, CSV export and SMS-gateway receipts (D53)."""
+"""Campaign webhook on approve, redeliver, CSV export and SMS-gateway receipts (D56)."""
 
 import json
 import time
@@ -180,7 +180,7 @@ def test_audit_trail_shows_system_receipt(fake):
     assert r.status_code == 200 and r.json()[0]["actor_role"] == "system" and r.json()[0]["actor_id"] is None
 
 
-# ── SMS status on the batch list (D55) ───────────────────────────────────────
+# ── SMS status on the batch list (D59) ───────────────────────────────────────
 def event(action, metadata):
     return {"action": action, "target_id": BATCH_ID, "metadata": metadata, "created_at": "2026-10-03T17:00:00+00:00"}
 

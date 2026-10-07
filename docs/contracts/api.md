@@ -20,7 +20,7 @@ proxied through the existing Python `supabase` client.
 | `POST /api/score` | `X-API-Key` or signed in | `{wallets: WalletHistory[1..500]}` ([ingest.md](ingest.md)) | `{model_version, tau, delta, results: ScoreResult[]}` | 401, 403, 422, 503 model missing |
 | `POST /api/campaign/receipts` | gateway (HMAC headers) | `{batch_id, sent, delivered, failed, gateway_ref?, failed_wallet_ids?}` | the receipt | 401 bad/stale signature, 404, 409 not approved, 422, 503 no secret |
 
-Approve also POSTs the batch to `CAMPAIGN_WEBHOOK_URL` when it is set (D53, [`docs/integration.md`](../integration.md) §3).
+Approve also POSTs the batch to `CAMPAIGN_WEBHOOK_URL` when it is set (D56, [`docs/integration.md`](../integration.md) §3).
 
 ```ts
 type Batch = {

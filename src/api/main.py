@@ -6,6 +6,7 @@ from fastapi.responses import JSONResponse
 from supabase_auth.errors import AuthRetryableError
 
 from src.api.batches import router as batches_router
+from src.api.routes_v1 import router as v1_router
 from src.api.schemas import HealthResponse, StoreKind
 from src.api.score import router as score_router
 from src.api.store import store_kind
@@ -18,6 +19,7 @@ VERSION = "0.1.0"
 app = FastAPI(title="WhyQuiet API", version=VERSION, docs_url="/api/docs", openapi_url="/api/openapi.json")
 app.include_router(batches_router)
 app.include_router(score_router)
+app.include_router(v1_router)
 
 
 # Supabase down or paused (network error, or auth 5xx) -> 503 per docs/contracts/api.md, never 401.
@@ -28,6 +30,7 @@ def supabase_unreachable(_req: Request, exc: Exception) -> JSONResponse:
     return JSONResponse({"detail": "Write path offline"}, status_code=503)
 
 
+@app.get("/health", response_model=HealthResponse)
 @app.get("/api/health", response_model=HealthResponse)
 def health() -> HealthResponse:
     try:

@@ -955,7 +955,7 @@ export default function Batches({ user: propUser, onOpenLogin }: BatchesProps) {
         )}
       </Card>
 
-      {/* SMS preview: phone mockup + per-wallet delivery result (D56) */}
+      {/* SMS preview: phone mockup + per-wallet delivery result (D60) */}
       {(() => {
         const b = batches.find((x) => x.id === smsViewId);
         if (!b?.sms) return null;

@@ -1,0 +1,72 @@
+# WhyQuiet Template-First Messaging Configuration
+# DISCLAIMER: Templates designed for demonstration; production deployment requires native Bangla review.
+# All amounts and codes are injected programmatically from the allocation engine (never LLM-generated).
+
+disclaimer: "All message copy is template-driven with programmatically injected values. Native speaker review recommended before field deployment."
+
+templates:
+  fee_shock:
+    A3:
+      sms:
+        bn: "আপনার ওয়ালেটে ক্যাশ-আউটের ফি নিয়ে চিন্তা? আগামী {validity_days} দিনের মধ্যে ক্যাশ-আউটে পাচ্ছেন ৳{amount_bdt} পর্যন্ত ১০০% ফি ফেরত! ডায়াল {ussd_code}"
+        en: "Worried about cash-out fees? Enjoy 100% cash-out fee refund up to ৳{amount_bdt} for the next {validity_days} days. Dial {ussd_code}"
+      push:
+        bn: "ক্যাশ-আউটে পুরো ফি ফেরত! আপনার জন্য ৳{amount_bdt} ফি ওয়েভার যোগ হয়েছে। ট্যাপ করে লেনদেন করুন।"
+        en: "100% Cash-out fee refund! ৳{amount_bdt} fee waiver applied to your account. Tap to transact."
+    A0:
+      sms:
+        bn: "এখন অ্যাপে এবং {ussd_code} ডায়াল করে যেকোনো ইউটিলিটি বিল দিন সম্পূর্ণ ফ্রিতে, কোনো অতিরিক্ত চার্জ ছাড়াই।"
+        en: "Pay any utility bill with zero extra fees directly from your wallet. Dial {ussd_code}"
+      push:
+        bn: "জিরো চার্জে বিল পে! ওয়ালেট দিয়ে সহজেই বিল পরিশোধ করুন সম্পূর্ণ ফ্রিতে।"
+        en: "Zero charge bill payments! Pay your utility bills instantly with zero added fee."
+
+  supply_failure:
+    A_ops:
+      sms:
+        bn: "আপনার নিকটস্থ এজেন্ট পয়েন্টে ({agent_name}) পর্যাপ্ত ক্যাশ ও নিরবচ্ছিন্ন সেবা প্রস্তুত রয়েছে। ক্যাশ-ইন/আউট করতে ভিজিট করুন।"
+        en: "Adequate cash float is now restored at your nearest agent ({agent_name}). Visit now for smooth cash services."
+      push:
+        bn: "নিকটস্থ এজেন্টে ক্যাশ রেডি! আপনার কাছেই {agent_name} পয়েন্টে নিরবচ্ছিন্ন ক্যাশ-আউট সেবা পান।"
+        en: "Cash ready nearby! Visit {agent_name} for instant cash-out services."
+    A0:
+      sms:
+        bn: "নেটওয়ার্ক সমস্যার সমাধান হয়েছে। যেকোনো সময় সহজে ব্যালেন্স চেক বা লেনদেন করতে ডায়াল করুন {ussd_code}"
+        en: "Network connectivity is fully restored. Dial {ussd_code} for seamless transactions."
+      push:
+        bn: "নির্বিঘ্ন লেনদেন! ওয়ালেট সেবা এখন সম্পূর্ণ সচল। ট্যাপ করে ব্যালেন্স দেখুন।"
+        en: "Seamless transactions! Wallet services are running smoothly. Tap to check balance."
+
+  migration:
+    A2:
+      sms:
+        bn: "আপনার প্রিয় মার্চেন্টে কেনাকাটা বা পেমেন্টে পাচ্ছেন ৳{amount_bdt} ইনস্ট্যান্ট ক্যাশব্যাক! অফারটি চলবে {validity_days} দিন।"
+        en: "Get instant ৳{amount_bdt} cashback on merchant payments across your area! Valid for {validity_days} days."
+      push:
+        bn: "৳{amount_bdt} ইনস্ট্যান্ট ক্যাশব্যাক! আশেপাশের যেকোনো দোকানে পেমেন্ট করলেই অফার প্রযোজ্য।"
+        en: "৳{amount_bdt} instant cashback! Pay at nearby merchants to enjoy your reward."
+    A0:
+      sms:
+        bn: "দেশজুড়ে যেকোনো স্থান থেকে যেকোনো অপারেটরে টাকা পাঠান মাত্র কয়েক সেকেন্ডে। ডায়াল {ussd_code}"
+        en: "Send money instantly across all operators nationwide. Dial {ussd_code}"
+      push:
+        bn: "সহজ সেন্ড মানি! যেকোনো নম্বরে মুহূর্তেই টাকা পাঠান ঘরে বসেই।"
+        en: "Easy Send Money! Transfer funds to any number nationwide."
+
+  job_exit:
+    A_none:
+      sms:
+        bn: ""  # Suppressed - zero outreach
+        en: ""
+      push:
+        bn: ""
+        en: ""
+
+  solved_problem:
+    A_none:
+      sms:
+        bn: ""  # Suppressed - organic return expected
+        en: ""
+      push:
+        bn: ""
+        en: ""

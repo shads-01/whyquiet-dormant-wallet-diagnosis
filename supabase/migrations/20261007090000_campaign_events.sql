@@ -1,4 +1,4 @@
--- Campaign webhook deliveries and SMS-gateway receipts in the append-only audit log (D53).
+-- Campaign webhook deliveries and SMS-gateway receipts in the append-only audit log (D56).
 -- Only loosens checks, so every existing row stays valid and the live code keeps working (D51).
 --   campaign.delivered / campaign.failed: the approver whose approve or redeliver call fired the webhook
 --   campaign.receipt: posted by the SMS gateway (HMAC-signed), so no user; actor_role 'system', actor_id null

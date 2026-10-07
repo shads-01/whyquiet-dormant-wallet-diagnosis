@@ -1,4 +1,4 @@
-"""Signed campaign webhook to the SMS gateway and its signed delivery receipts (D53).
+"""Signed campaign webhook to the SMS gateway and its signed delivery receipts (D56).
 
 Signature (both directions): X-WhyQuiet-Signature: sha256=HMAC_SHA256(CAMPAIGN_WEBHOOK_SECRET, f"{ts}.{body}")
 with X-WhyQuiet-Timestamp: ts (unix seconds). Receivers reject anything older than MAX_SKEW seconds.

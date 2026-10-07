@@ -12,7 +12,7 @@ const STATE_CHIP: Record<WalletState, { tone: "success" | "danger" | "neutral" |
   "totals-only": { tone: "warning", label: "in totals only" },
 };
 
-/** What the customer's phone shows and what happened to each wallet's SMS (D56). No phone numbers: IDs only. */
+/** What the customer's phone shows and what happened to each wallet's SMS (D60). No phone numbers: IDs only. */
 export default function SmsPreview({ batch, remedy, onClose, canRetry, sending, onRetry }: {
   batch: Batch;
   remedy: Remedy | undefined;

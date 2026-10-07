@@ -1,6 +1,6 @@
 # Integration architecture: upay ledger → Cause Desk → SMS gateway
 
-> Decisions D52 (live scoring), D53 (campaign webhook + receipts), D54 (capacity).
+> Decisions D55 (live scoring), D56 (campaign webhook + receipts), D57 (capacity).
 > Everything here runs in this repo and is tested. What we **cannot** show is a connection to upay's real
 > systems: we have no access to them. Their names and field availability below are **ASSUMED**.
 
@@ -91,12 +91,12 @@ X-WhyQuiet-Timestamp: …   X-WhyQuiet-Signature: sha256=…
 ```
 
 `failed_wallet_ids` is optional. When present it must name each failed wallet exactly once, and every ID must
-belong to the batch. The console's **View SMS** panel uses it to show which wallets failed (D56).
+belong to the batch. The console's **View SMS** panel uses it to show which wallets failed (D60).
 
 Checks: signature and freshness (401), batch exists (404) and is approved (409), `delivered + failed ≤ sent ≤
 wallet_count` (422). Stored as `campaign.receipt` with actor role `system`, and shown in the batch history.
 
-## 4. Capacity (measured, D54)
+## 4. Capacity (measured, D57)
 
 Measured on one laptop core (Intel Core Ultra 9 185H, Windows 11, Python 3.12), scoring all 3,000
 population B wallets end to end (file read, grouping, validation, features, model, explanations):

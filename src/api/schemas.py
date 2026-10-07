@@ -56,7 +56,7 @@ class LoginResponse(BaseModel):
 
 
 class SmsStatus(BaseModel):
-    # Campaign hand-off state of an approved batch, folded from campaign.* audit rows (D55)
+    # Campaign hand-off state of an approved batch, folded from campaign.* audit rows (D59)
     gateway_connected: bool  # CAMPAIGN_WEBHOOK_URL + secret set on this server
     webhook: Literal["delivered", "failed"] | None = None  # latest delivery attempt; None = never sent
     sent: int | None = None  # latest gateway receipt
@@ -118,7 +118,7 @@ class LockedWallet(BaseModel):
 class AuditRole(str, Enum):
     analyst = "analyst"
     approver = "approver"
-    system = "system"  # SMS gateway receipts (D53)
+    system = "system"  # SMS gateway receipts (D56)
 
 
 class AuditEntry(BaseModel):
@@ -132,7 +132,7 @@ class AuditEntry(BaseModel):
     created_at: str
 
 
-# Live scoring (docs/contracts/ingest.md, D52)
+# Live scoring (docs/contracts/ingest.md, D55)
 
 
 class PayCycle(str, Enum):
@@ -217,7 +217,7 @@ class ScoreResponse(BaseModel):
     results: list[ScoreResult]
 
 
-# Campaign webhook and SMS gateway receipts (D53)
+# Campaign webhook and SMS gateway receipts (D56)
 
 
 class DeliveryResult(BaseModel):
@@ -233,7 +233,7 @@ class Receipt(BaseModel):
     delivered: int = Field(..., ge=0)
     failed: int = Field(..., ge=0)
     gateway_ref: Annotated[str, StringConstraints(max_length=100)] | None = None
-    failed_wallet_ids: list[WalletIdStr] = Field(default_factory=list, max_length=1000)  # optional detail (D56)
+    failed_wallet_ids: list[WalletIdStr] = Field(default_factory=list, max_length=1000)  # optional detail (D60)
 
     @model_validator(mode="after")
     def _counts_add_up(self) -> Self:

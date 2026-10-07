@@ -1,4 +1,4 @@
-"""scripts/webhook_receiver.py: the mock gateway accepts exactly what the API sends (D53)."""
+"""scripts/webhook_receiver.py: the mock gateway accepts exactly what the API sends (D56)."""
 
 import json
 import threading

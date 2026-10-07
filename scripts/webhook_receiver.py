@@ -1,4 +1,4 @@
-"""Mock SMS gateway for demos (D53): verifies the campaign webhook signature and posts a signed receipt back.
+"""Mock SMS gateway for demos (D56): verifies the campaign webhook signature and posts a signed receipt back.
 
 Standard library only. Nothing is sent to any phone.
 Run:  CAMPAIGN_WEBHOOK_SECRET=... uv run python scripts/webhook_receiver.py --api http://localhost:8008

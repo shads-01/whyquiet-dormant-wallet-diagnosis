@@ -31,7 +31,7 @@ HONESTY_LINE = (  # AMENDMENT A1, verbatim
     "not real-world accuracy."
 )
 SAMPLE = 400
-LEDGER_SAMPLE = 20  # wallets in web/public/sample-ledger.csv for the Score page (D52)
+LEDGER_SAMPLE = 20  # wallets in web/public/sample-ledger.csv for the Score page (D55)
 MODEL_VERSION = "lgbm-v1"
 REFUSED_SHARE = 0.25  # of the UI sample; plan asks for >= 20% refused so the refusal screen has examples
 MODEL_ASSUMPTIONS = [
