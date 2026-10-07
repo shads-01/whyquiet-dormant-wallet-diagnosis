@@ -79,7 +79,7 @@ export default function Evidence() {
   const report = bundle?.report;
   const ml = report?.ml;
   const depth = report?.depth;
-  const money = depth?.money_ev ?? report?.money; // decision-aware table (D63) when the seed has it
+  const money = depth?.money_ev ?? report?.money; // decision-aware table (D65) when the seed has it
 
   // Filter money rows for currently selected rate
   const moneyFiltered = useMemo(() => {

@@ -57,7 +57,7 @@ export type Report = {
   }[];
   money: MoneyRow[] | null; // null if src/rules.money not ready at export time
   assumptions: string[]; // every ASSUMED input, one line each
-  depth?: Depth; // phase 2 evidence from scripts/depth.py (D60-D64); absent in seed.sample.json
+  depth?: Depth; // phase 2 evidence from scripts/depth.py (D62-D66); absent in seed.sample.json
 };
 
 export type MoneyRow = {

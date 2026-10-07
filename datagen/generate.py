@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 
 CAUSES = ["job_exit", "solved_problem", "fee_shock", "supply_failure", "migration"]
-NOVEL = "device_loss"  # stress test only (population C, D61): phone lost or SIM swapped; never in A or B
+NOVEL = "device_loss"  # stress test only (population C, D63): phone lost or SIM swapped; never in A or B
 WORKERS = ["garment", "domestic", "transport", "retail"]
 CYCLES = ["weekly", "biweekly", "monthly"]
 ROOT = Path(__file__).resolve().parent.parent  # repo root: data/ and truth/ live here

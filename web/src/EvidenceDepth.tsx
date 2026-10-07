@@ -1,4 +1,4 @@
-// Phase 2 evidence sections (D64): data comes from report.depth, written by scripts/depth.py.
+// Phase 2 evidence sections (D66): data comes from report.depth, written by scripts/depth.py.
 import type { ReactNode } from "react";
 import {
   ResponsiveContainer,

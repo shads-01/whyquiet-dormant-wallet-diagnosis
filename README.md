@@ -72,7 +72,8 @@ For **upay's MFS operations team**, **sending the same "come back" SMS to every 
 | **Wallet Detail** | `#/w/<wallet_id>` | Weekly decline-shape chart with the silent window shaded; 5-cause posterior bar chart with the τ (confidence bar) line; top 8 signed feature contributions; "rule vs Cause Desk" comparison; remedy card with unit cost and bilingual message preview. |
 | **Refusal view** | `#/w/<refused id>` | Headline *"No attributable cause. I will not spend your money here."*, the exact refusal reasons (τ and/or δ test that failed), and no action buttons. |
 | **Evidence** | `#/evidence` | Population-B metrics (macro-F1, A→B gap, refusal rates, calibration error), rule baseline, shuffled-label control, best single feature; the refusal coverage curve and baseline ladder; per-cause scores, blended-wallet refusal and feature ablation; confusion matrix; subgroup table with calibration error; reliability diagram; label-free checks (accuracy estimate, cause mix, drift alarm); stress tests (noise dial, unseen cause); and the value-gated money table with a 1% / 4% / 8% recovery-rate switch. All ASSUMED inputs are listed. |
-| **Batches** | `#/batches` | Propose a cause-targeted batch (analyst), approve/reject with a required note (approver), download an approved batch as a campaign JSON. |
+| **Batches** | `#/batches` | Propose a cause-targeted batch (analyst), approve/reject with a required note (approver), download an approved batch as campaign JSON or CSV, re-send it to the campaign webhook, and see webhook deliveries and SMS-gateway receipts in the batch history. |
+| **Score** | `#/score` | Upload a ledger CSV (or use the 20-wallet sample) and score it **live** on the server with the same model; sign-in required. |
 | Design system | `#/design` | Style tokens and components used by the console. |
 | Light/dark mode | header toggle | Stored per browser. |
 
@@ -86,8 +87,13 @@ For **upay's MFS operations team**, **sending the same "come back" SMS to every 
 | `POST /api/batches` | bearer, `analyst` | Propose a batch. Remedy code and unit cost are taken from `src/rules/remedies.py`, never from the client. 1–1000 wallet IDs matching `^W-[0-9A-Z]{6}$`. |
 | `POST /api/batches/{id}/approve` | bearer, `approver` | Approve with a 1–500 char note. Approver must differ from proposer. |
 | `POST /api/batches/{id}/reject` | bearer, `approver` | Reject with a 1–500 char note. |
-| `GET /api/batches/{id}/export` | none | Campaign payload (wallet IDs, remedy, total cost) for an **approved** batch only. |
+| `GET /api/batches/{id}/export` | bearer | Campaign payload (wallet IDs, remedy, total cost) for an **approved** batch only. `?format=csv` gives one row per wallet with the Bangla and English message. |
+| `POST /api/score` | `X-API-Key` or bearer | **Live triage** of up to 500 wallets of weekly ledger aggregates ([ingest contract](docs/contracts/ingest.md)): verdict, posterior, reasons, rule baseline, priced remedy. |
+| `POST /api/batches/{id}/redeliver` | bearer, `approver` | Re-send an approved batch to the campaign webhook. |
+| `POST /api/campaign/receipts` | HMAC signature | SMS-gateway delivery report (sent / delivered / failed) for an approved batch; stored in the audit log. |
 | `GET /api/docs` | none | Interactive OpenAPI docs. |
+
+On approve, the API POSTs the batch to `CAMPAIGN_WEBHOOK_URL`, signed with HMAC-SHA256 and an idempotency key. The result is written to the audit log and never undoes the approval. Full contract: [`docs/integration.md`](docs/integration.md).
 
 Database rules (Postgres triggers and constraints in `supabase/migrations/`): two-person rule, a wallet can sit in only one open batch, decided batches are locked, and the audit log is append-only (UPDATE/DELETE/TRUNCATE blocked).
 
@@ -101,7 +107,7 @@ Database rules (Postgres triggers and constraints in `supabase/migrations/`): tw
 
 Everything after the classifier is deterministic code in `src/rules/`: the 3-week rule baseline (`baseline.py`), the remedy catalogue with costs and messages (`remedies.py`), and the money model (`money.py`). There is **no LLM** in this project; message copy is fixed, human-written text.
 
-**Important:** the model runs **offline**. `scripts/export_seed.py` generates data, trains, scores population B and writes `web/public/seed.json`; the deployed console reads that file. The serverless API does not load LightGBM (see [Known Limitations](#16-known-limitations)).
+**Where the model runs.** Training is offline: `scripts/export_seed.py` generates data, trains, scores population B, writes `web/public/seed.json` for the read screens, and saves the model to `src/model/artifacts/`. The serverless API loads that saved model for **live scoring** (`POST /api/score`, Score page), and `scripts/score_batch.py` uses the same code for bulk files. A test checks that the live endpoint returns exactly the `seed.json` verdicts and probabilities.
 
 ---
 
@@ -221,8 +227,11 @@ All variables live in `.env` (gitignored by the `.env*` rule in `.gitignore`; on
 | `SUPABASE_ANON_KEY` | Not read by application code; kept for Supabase CLI / manual use | No | Supabase dashboard → Project Settings → API → `anon` key |
 | `SUPABASE_DB_PASSWORD` | Not read by application code; database password for `supabase db push` | No | Set when creating the Supabase project |
 | `API_PORT` | Port the Vite dev server proxies `/api` to (`web/vite.config.ts`) | No (default `8008`) | Set in the shell that runs `npm run dev` |
+| `SCORE_API_KEY` | Shared key for machine-to-machine `POST /api/score` (`X-API-Key` header) | No (key auth off when empty) | Any long random string, e.g. `python -c "import secrets; print(secrets.token_urlsafe(32))"` |
+| `CAMPAIGN_WEBHOOK_URL` | Where approved batches are POSTed (campaign engine / SMS gateway) | No (webhook off when empty) | The gateway's URL; locally `http://localhost:9009/hook` with `scripts/webhook_receiver.py` |
+| `CAMPAIGN_WEBHOOK_SECRET` | HMAC secret that signs the webhook and verifies gateway receipts | With the webhook | Any long random string, shared with the gateway |
 
-**Deployment (Vercel project settings):** only `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`.
+**Deployment (Vercel project settings):** `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`, plus optionally `SCORE_API_KEY`, `CAMPAIGN_WEBHOOK_URL` and `CAMPAIGN_WEBHOOK_SECRET`.
 **CI/CD (GitHub Actions secrets):** `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`. See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
 
 ---
@@ -255,7 +264,13 @@ The web console still works if the API is down: read screens use `seed.json` and
 uv run python -m datagen.generate --seed 42      # synthetic data only -> data/, truth/
 uv run python scripts/evaluate.py --seed 42      # metrics JSON (needs the data above)
 uv run python scripts/depth.py --seed 42         # phase 2 evidence JSON: coverage, baselines, label-free checks, stress tests
-uv run python scripts/export_seed.py --seed 42   # full pipeline -> web/public/seed.json
+uv run python scripts/export_seed.py --seed 42   # full pipeline -> seed.json, model artifacts, sample-ledger.csv
+uv run python scripts/score_batch.py --in web/public/sample-ledger.csv --out triage.csv   # bulk scoring + wallets/s
+```
+
+Mock SMS gateway for the webhook loop (standard library only, see [`docs/integration.md`](docs/integration.md) §6):
+```bash
+CAMPAIGN_WEBHOOK_SECRET=dev-secret uv run python scripts/webhook_receiver.py --api http://localhost:8008
 ```
 
 ### Production build
@@ -452,7 +467,7 @@ How to read this fairly: the model's F1 counts only the 78.3% of B wallets it at
 
 Honest reading: with these assumed costs, sending the targeted remedy to every attributed wallet only beats the cheap blanket SMS when the targeted recovery rate is high (8%); at 1% and 4% the rule's low cost wins. The fix is below.
 
-### Phase 2 evidence (`scripts/depth.py`, D60–D64)
+### Phase 2 evidence (`scripts/depth.py`, D62–D66)
 
 Everything here is computed by `uv run python scripts/depth.py --seed 42` and shipped as `report.depth` in `seed.json`. The model, τ/δ, the data and every number above are unchanged.
 
@@ -574,7 +589,16 @@ flowchart LR
     S --> UI --> B --> API --> DB --> E
 ```
 
-**Connecting to a real upay backend later.** The model needs only weekly aggregates per wallet (the seven columns above), which can be computed from a ledger without names, numbers or NIDs. The integration path would be: (1) a scheduled job that exports pseudonymised weekly aggregates for wallets silent ≥ 3 weeks; (2) run `features()` and the trained model on that table, which is the same code path as `export_seed.py`; (3) first fit the cause model on outcomes from small labelled pilot campaigns, since real ledgers contain no cause label; (4) hand the approved campaign JSON (`GET /api/batches/{id}/export`) to upay's existing outbound messaging system. <!-- TODO: confirm with upay what ledger fields and campaign-system input format would be available. -->
+**Integration with upay** ([`docs/integration.md`](docs/integration.md)). Built and tested in this repo:
+1. **Ingest:** weekly per-wallet aggregates, with no names, numbers or NIDs ([`docs/contracts/ingest.md`](docs/contracts/ingest.md)).
+2. **Score:** live via `POST /api/score` with an `X-API-Key` (≤ 500 wallets per call), or in bulk via `scripts/score_batch.py`. Both use the same function.
+3. **Decide:** the two-person batch approval.
+4. **Hand off:** an HMAC-signed webhook to the campaign engine / SMS gateway, with an idempotency key and re-send. CSV/JSON export is the fallback.
+5. **Close the loop:** signed delivery receipts land in the audit log.
+
+**Measured capacity:** 500–611 wallets/s on one laptop core, so ≈ 2 h for the modelled 3.63M dormant base and ≈ 49 s for a weekly batch of newly dormant wallets. The wallet counts are ASSUMED.
+
+**Not shown:** a connection to upay's real ledger and gateway (no access), and real outcome labels. Before any rollout, the cause model would first be fit on outcomes from small labelled pilot campaigns.
 
 ---
 
@@ -599,7 +623,8 @@ flowchart LR
 ## 16. Known Limitations
 
 - **Simulated causes.** Accuracy is measured on simulated populations; it is evidence of robustness to shift in simulation, not of real-world accuracy.
-- **Model is offline.** The console reads precomputed results from `seed.json`. The serverless API does not run the model. The Queue's Quick Wallet Diagnostic calls `POST /api/triage`, which is not implemented, and falls back to looking the wallet up in the seed.
+- **No live upay connection.** Ingest, scoring, the webhook and receipts are real and tested, but they have only been run against synthetic files and a mock gateway (`scripts/webhook_receiver.py`). upay's field availability and gateway format are ASSUMED. Live API latency on Vercel (cold start included) has not been measured yet.
+- **Read screens use precomputed results.** Queue, Wallet and Evidence read `seed.json`. Live scoring is on the Score page and the API.
 - **Batches screen hides some API failures.** Sign-in uses the real `POST /api/auth/login`, but if a propose, approve or export call fails, the Batches screen falls back to a local in-browser batch instead of showing the error. Authentication, roles and the two-person rule are enforced by the **API and database** (verify with the `curl` steps in [Testing](#9-testing-instructions)). Tracked as bug #3 in [`docs/TEST_REPORT.md`](docs/TEST_REPORT.md). <!-- TODO: remove this bullet if the Batches fallbacks are removed before submission. -->
 - **Public read endpoints.** `GET /api/batches` and `GET /api/batches/{id}/export` need no login. They expose only pseudonymous synthetic wallet IDs.
 - **Money model inputs are all ASSUMED** (ARPU, costs, recovery rates).

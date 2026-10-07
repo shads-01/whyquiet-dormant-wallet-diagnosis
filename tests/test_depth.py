@@ -1,4 +1,4 @@
-"""scripts/depth.py: coverage, calibration, label-free checks, stress tests, ablation, decision-aware money (D60-D64)."""
+"""scripts/depth.py: coverage, calibration, label-free checks, stress tests, ablation, decision-aware money (D62-D66)."""
 
 from pathlib import Path
 

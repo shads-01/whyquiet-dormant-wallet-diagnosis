@@ -28,8 +28,13 @@ def row(**over):
 
 
 class Query:
-    def __init__(self, data):
+    def __init__(self, data, on_insert=lambda _row: None):
         self.data = list(data) if isinstance(data, list) else data
+        self.on_insert = on_insert
+
+    def insert(self, row):
+        self.on_insert(row)
+        return self
 
     def eq(self, col, val):
         if isinstance(self.data, list):
@@ -57,6 +62,7 @@ class FakeSupabase:
     def __init__(self, rpc_result=None, rpc_error=None, tables=None):
         self.rpc_result, self.rpc_error, self.tables = rpc_result, rpc_error, tables or {}
         self.rpc_calls: list[tuple[str, dict]] = []
+        self.inserts: list[tuple[str, dict]] = []
         self.auth = SimpleNamespace(get_user=self._get_user, sign_in_with_password=self._sign_in)
 
     def _get_user(self, jwt):
@@ -76,7 +82,7 @@ class FakeSupabase:
         return Query(self.rpc_result)
 
     def table(self, name):
-        return Query(self.tables.get(name, []))
+        return Query(self.tables.get(name, []), lambda row: self.inserts.append((name, row)))
 
 
 @pytest.fixture

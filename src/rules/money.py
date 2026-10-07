@@ -98,7 +98,7 @@ def money_table(n_triaged: int, n_correct: int, n_wrong: int, n_refused: int) ->
     return rows
 
 
-# Decision-aware money (D63): per-wallet choice between doing nothing, the blanket SMS and the targeted remedy.
+# Decision-aware money (D65): per-wallet choice between doing nothing, the blanket SMS and the targeted remedy.
 COSTS_BDT: dict[str, float] = {c: r["unit_cost_bdt"] for c, r in REMEDIES.items()}
 NO_RETURN = "solved_problem"  # ASSUMED: a wallet whose need is solved does not come back for any message
 EV_ASSUMPTIONS: list[str] = [

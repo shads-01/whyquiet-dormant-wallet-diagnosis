@@ -1,4 +1,4 @@
-"""Phase 2 evidence beside scripts/evaluate.py (D60-D64): how far to trust the model, how it compares with simpler
+"""Phase 2 evidence beside scripts/evaluate.py (D62-D66): how far to trust the model, how it compares with simpler
 answers, and what can still be checked on a real ledger that has no cause labels.
 
 Eval-only, like evaluate.py: it may read truth/; src/model may not. Stress populations are built in memory and
@@ -202,7 +202,7 @@ def depth(seed: int, root: Path = ROOT) -> dict:
     def mix(truth: list[str]) -> np.ndarray:
         return pd.Series(truth).value_counts(normalize=True).reindex(CAUSES, fill_value=0).to_numpy()
 
-    prior = mix(truth_tr)  # A-train frequencies; beat a uniform prior on A-test (max error 0.008 vs 0.014), D62
+    prior = mix(truth_tr)  # A-train frequencies; beat a uniform prior on A-test (max error 0.008 vs 0.014), D64
     true_mix, est_mix = mix(truth_b), em_mix(p_b, prior)
     argmax_mix = np.bincount(p_b.argmax(axis=1), minlength=len(CAUSES)) / len(p_b)
     domain = pd.concat([X_tr, X_b])

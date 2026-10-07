@@ -14,7 +14,7 @@ def rule_baseline(weeks_silent: int) -> dict:
 
 
 def expert_cause(X: pd.DataFrame) -> list[str]:
-    """Hand-written analyst rules over the shape features: the strongest non-ML baseline (D60).
+    """Hand-written analyst rules over the shape features: the strongest non-ML baseline (D62).
 
     Thresholds were set by hand from per-cause medians on A-train, never from population B.
     Later lines win when two rules fire.
