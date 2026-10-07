@@ -68,7 +68,11 @@ Under **Vercel Dashboard > Your Project > Settings > Environment Variables**, co
 | `SUPABASE_URL` | Yes (for write path) | Your Supabase project URL (e.g. `https://xyz.supabase.co`) |
 | `SUPABASE_SERVICE_ROLE_KEY` | Yes (for write path) | Service role secret key (server-side only, bypasses RLS) |
 
-Only these two are read by the API. `SUPABASE_ANON_KEY` and the demo passwords are local-only (`.env`, used by `supabase/seed_demo_users.py`); do not add them to Vercel.
+| `SCORE_API_KEY` | No | Enables machine-to-machine `POST /api/score` with `X-API-Key` (D52) |
+| `CAMPAIGN_WEBHOOK_URL` | No | Campaign engine / SMS gateway URL that receives approved batches (D53) |
+| `CAMPAIGN_WEBHOOK_SECRET` | With the webhook | HMAC secret for the webhook and gateway receipts (D53) |
+
+Each optional feature is off while its variable is empty. `SUPABASE_ANON_KEY` and the demo passwords are local-only (`.env`, used by `supabase/seed_demo_users.py`); do not add them to Vercel.
 
 *Note: If Supabase variables are not set, read-only screens still function 100% via seeded offline data, and write-path calls return a 503 with a graceful in-app banner.*
 
