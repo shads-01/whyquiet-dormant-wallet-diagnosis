@@ -318,6 +318,20 @@
             }
           },
           {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "json",
+                "csv"
+              ],
+              "type": "string",
+              "default": "json",
+              "title": "Format"
+            }
+          },
+          {
             "name": "authorization",
             "in": "header",
             "required": false,
@@ -341,6 +355,121 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ExportBatchResponse"
+                }
+              },
+              "text/csv": {}
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/batches/{id}/redeliver": {
+      "post": {
+        "summary": "Redeliver Batch",
+        "operationId": "redeliver_batch_api_batches__id__redeliver_post",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeliveryResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/campaign/receipts": {
+      "post": {
+        "summary": "Campaign Receipt",
+        "operationId": "campaign_receipt_api_campaign_receipts_post",
+        "parameters": [
+          {
+            "name": "x-whyquiet-timestamp",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Whyquiet-Timestamp"
+            }
+          },
+          {
+            "name": "x-whyquiet-signature",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Whyquiet-Signature"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Receipt"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Receipt"
                 }
               }
             }
@@ -468,6 +597,78 @@
         }
       }
     },
+    "/api/score": {
+      "post": {
+        "summary": "Score",
+        "operationId": "score_api_score_post",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScoreRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScoreResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/health": {
       "get": {
         "summary": "Health",
@@ -496,11 +697,18 @@
             "title": "Id"
           },
           "actor_id": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Actor Id"
           },
           "actor_role": {
-            "$ref": "#/components/schemas/UserRole"
+            "$ref": "#/components/schemas/AuditRole"
           },
           "action": {
             "type": "string",
@@ -526,6 +734,12 @@
                   "type": "boolean"
                 },
                 {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
                   "type": "null"
                 }
               ]
@@ -541,13 +755,21 @@
         "type": "object",
         "required": [
           "id",
-          "actor_id",
           "actor_role",
           "action",
           "target_id",
           "created_at"
         ],
         "title": "AuditEntry"
+      },
+      "AuditRole": {
+        "type": "string",
+        "enum": [
+          "analyst",
+          "approver",
+          "system"
+        ],
+        "title": "AuditRole"
       },
       "Batch": {
         "properties": {
@@ -613,6 +835,16 @@
           "created_at": {
             "type": "string",
             "title": "Created At"
+          },
+          "sms": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SmsStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -647,6 +879,29 @@
           "supply_failure"
         ],
         "title": "CauseFamily"
+      },
+      "Contribution": {
+        "properties": {
+          "feature": {
+            "type": "string",
+            "title": "Feature"
+          },
+          "value": {
+            "type": "number",
+            "title": "Value"
+          },
+          "contribution": {
+            "type": "number",
+            "title": "Contribution"
+          }
+        },
+        "type": "object",
+        "required": [
+          "feature",
+          "value",
+          "contribution"
+        ],
+        "title": "Contribution"
       },
       "CreateBatchRequest": {
         "properties": {
@@ -685,6 +940,41 @@
           "note"
         ],
         "title": "DecisionRequest"
+      },
+      "DeliveryResult": {
+        "properties": {
+          "delivered": {
+            "type": "boolean",
+            "title": "Delivered"
+          },
+          "status_code": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status Code"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "delivered"
+        ],
+        "title": "DeliveryResult"
       },
       "ExportBatchResponse": {
         "properties": {
@@ -761,6 +1051,17 @@
             "type": "boolean",
             "title": "Stub",
             "default": false
+          },
+          "model_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Version"
           }
         },
         "type": "object",
@@ -847,6 +1148,303 @@
         ],
         "title": "LoginResponse"
       },
+      "PayCycle": {
+        "type": "string",
+        "enum": [
+          "weekly",
+          "biweekly",
+          "monthly"
+        ],
+        "title": "PayCycle"
+      },
+      "Receipt": {
+        "properties": {
+          "batch_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Batch Id"
+          },
+          "sent": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Sent"
+          },
+          "delivered": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Delivered"
+          },
+          "failed": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Failed"
+          },
+          "gateway_ref": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gateway Ref"
+          },
+          "failed_wallet_ids": {
+            "items": {
+              "type": "string",
+              "pattern": "^W-[0-9A-Z]{6}$"
+            },
+            "type": "array",
+            "maxItems": 1000,
+            "title": "Failed Wallet Ids"
+          }
+        },
+        "type": "object",
+        "required": [
+          "batch_id",
+          "sent",
+          "delivered",
+          "failed"
+        ],
+        "title": "Receipt"
+      },
+      "Remedy": {
+        "properties": {
+          "remedy_code": {
+            "type": "string",
+            "title": "Remedy Code"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "unit_cost_bdt": {
+            "type": "number",
+            "title": "Unit Cost Bdt"
+          }
+        },
+        "type": "object",
+        "required": [
+          "remedy_code",
+          "label",
+          "unit_cost_bdt"
+        ],
+        "title": "Remedy"
+      },
+      "RuleBaseline": {
+        "properties": {
+          "fired": {
+            "type": "boolean",
+            "title": "Fired"
+          },
+          "action": {
+            "type": "string",
+            "title": "Action"
+          }
+        },
+        "type": "object",
+        "required": [
+          "fired",
+          "action"
+        ],
+        "title": "RuleBaseline"
+      },
+      "ScoreRequest": {
+        "properties": {
+          "wallets": {
+            "items": {
+              "$ref": "#/components/schemas/WalletHistory"
+            },
+            "type": "array",
+            "maxItems": 500,
+            "minItems": 1,
+            "title": "Wallets"
+          }
+        },
+        "type": "object",
+        "required": [
+          "wallets"
+        ],
+        "title": "ScoreRequest"
+      },
+      "ScoreResponse": {
+        "properties": {
+          "model_version": {
+            "type": "string",
+            "title": "Model Version"
+          },
+          "tau": {
+            "type": "number",
+            "title": "Tau"
+          },
+          "delta": {
+            "type": "number",
+            "title": "Delta"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/ScoreResult"
+            },
+            "type": "array",
+            "title": "Results"
+          }
+        },
+        "type": "object",
+        "required": [
+          "model_version",
+          "tau",
+          "delta",
+          "results"
+        ],
+        "title": "ScoreResponse"
+      },
+      "ScoreResult": {
+        "properties": {
+          "wallet_id": {
+            "type": "string",
+            "title": "Wallet Id"
+          },
+          "weeks_silent": {
+            "type": "integer",
+            "title": "Weeks Silent"
+          },
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "attributed",
+              "refused"
+            ],
+            "title": "Verdict"
+          },
+          "cause": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CauseFamily"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "posterior": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Posterior"
+          },
+          "contributions": {
+            "items": {
+              "$ref": "#/components/schemas/Contribution"
+            },
+            "type": "array",
+            "title": "Contributions"
+          },
+          "refusal_reasons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Refusal Reasons"
+          },
+          "rule_baseline": {
+            "$ref": "#/components/schemas/RuleBaseline"
+          },
+          "remedy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Remedy"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "wallet_id",
+          "weeks_silent",
+          "verdict",
+          "cause",
+          "posterior",
+          "contributions",
+          "refusal_reasons",
+          "rule_baseline",
+          "remedy"
+        ],
+        "title": "ScoreResult"
+      },
+      "SmsStatus": {
+        "properties": {
+          "gateway_connected": {
+            "type": "boolean",
+            "title": "Gateway Connected"
+          },
+          "webhook": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "delivered",
+                  "failed"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Webhook"
+          },
+          "sent": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sent"
+          },
+          "delivered": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivered"
+          },
+          "failed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failed"
+          },
+          "failed_wallet_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Failed Wallet Ids"
+          }
+        },
+        "type": "object",
+        "required": [
+          "gateway_connected"
+        ],
+        "title": "SmsStatus"
+      },
       "StoreKind": {
         "type": "string",
         "enum": [
@@ -902,6 +1500,111 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "WalletHistory": {
+        "properties": {
+          "wallet_id": {
+            "type": "string",
+            "pattern": "^W-[0-9A-Z]{6}$",
+            "title": "Wallet Id"
+          },
+          "acquired_week": {
+            "type": "integer",
+            "maximum": 51.0,
+            "minimum": 0.0,
+            "title": "Acquired Week"
+          },
+          "fee_week": {
+            "type": "integer",
+            "maximum": 51.0,
+            "minimum": 0.0,
+            "title": "Fee Week"
+          },
+          "pay_cycle": {
+            "$ref": "#/components/schemas/PayCycle"
+          },
+          "weeks": {
+            "items": {
+              "$ref": "#/components/schemas/WeekRow"
+            },
+            "type": "array",
+            "maxItems": 52,
+            "minItems": 1,
+            "title": "Weeks"
+          }
+        },
+        "type": "object",
+        "required": [
+          "wallet_id",
+          "acquired_week",
+          "fee_week",
+          "pay_cycle",
+          "weeks"
+        ],
+        "title": "WalletHistory"
+      },
+      "WeekRow": {
+        "properties": {
+          "week": {
+            "type": "integer",
+            "maximum": 51.0,
+            "minimum": 0.0,
+            "title": "Week"
+          },
+          "txn_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Txn Count"
+          },
+          "amount_bdt": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Amount Bdt"
+          },
+          "cashin_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Cashin Count",
+            "default": 0
+          },
+          "cashout_ok": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Cashout Ok",
+            "default": 0
+          },
+          "cashout_fail": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Cashout Fail",
+            "default": 0
+          },
+          "app_share": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "App Share"
+          },
+          "district_changed": {
+            "type": "boolean",
+            "title": "District Changed",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "week",
+          "txn_count",
+          "amount_bdt"
+        ],
+        "title": "WeekRow"
       }
     }
   }

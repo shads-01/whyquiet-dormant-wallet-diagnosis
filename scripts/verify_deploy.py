@@ -18,6 +18,8 @@ def main() -> int:
         print(f"GET /api/health -> {r.status_code} {r.text[:120]}")
         if r.status_code != 200 or r.json().get("status") != "ok":
             failures.append("/api/health")
+        elif not r.json().get("model_version"):  # live scoring needs the model in the function bundle (D52)
+            failures.append("/api/health (model not loaded)")
     except Exception as exc:  # noqa: BLE001
         print(f"GET /api/health -> EXCEPTION: {exc}")
         failures.append(f"/api/health ({exc})")

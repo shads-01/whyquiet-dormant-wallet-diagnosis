@@ -90,6 +90,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/batches/{id}/redeliver": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Redeliver Batch */
+        post: operations["redeliver_batch_api_batches__id__redeliver_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/campaign/receipts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Campaign Receipt */
+        post: operations["campaign_receipt_api_campaign_receipts_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/wallets/locked": {
         parameters: {
             query?: never;
@@ -124,6 +158,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/score": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Score */
+        post: operations["score_api_score_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/health": {
         parameters: {
             query?: never;
@@ -150,19 +201,24 @@ export interface components {
             /** Id */
             id: string;
             /** Actor Id */
-            actor_id: string;
-            actor_role: components["schemas"]["UserRole"];
+            actor_id?: string | null;
+            actor_role: components["schemas"]["AuditRole"];
             /** Action */
             action: string;
             /** Target Id */
             target_id: string;
             /** Metadata */
             metadata?: {
-                [key: string]: string | number | boolean | null;
+                [key: string]: string | number | boolean | string[] | null;
             };
             /** Created At */
             created_at: string;
         };
+        /**
+         * AuditRole
+         * @enum {string}
+         */
+        AuditRole: "analyst" | "approver" | "system";
         /** Batch */
         Batch: {
             /** Id */
@@ -185,6 +241,7 @@ export interface components {
             decision_note?: string | null;
             /** Created At */
             created_at: string;
+            sms?: components["schemas"]["SmsStatus"] | null;
         };
         /**
          * BatchStatus
@@ -196,6 +253,15 @@ export interface components {
          * @enum {string}
          */
         CauseFamily: "job_exit" | "migration" | "solved_problem" | "fee_shock" | "supply_failure";
+        /** Contribution */
+        Contribution: {
+            /** Feature */
+            feature: string;
+            /** Value */
+            value: number;
+            /** Contribution */
+            contribution: number;
+        };
         /** CreateBatchRequest */
         CreateBatchRequest: {
             cause: components["schemas"]["CauseFamily"];
@@ -206,6 +272,15 @@ export interface components {
         DecisionRequest: {
             /** Note */
             note: string;
+        };
+        /** DeliveryResult */
+        DeliveryResult: {
+            /** Delivered */
+            delivered: boolean;
+            /** Status Code */
+            status_code?: number | null;
+            /** Error */
+            error?: string | null;
         };
         /** ExportBatchResponse */
         ExportBatchResponse: {
@@ -240,6 +315,8 @@ export interface components {
              * @default false
              */
             stub: boolean;
+            /** Model Version */
+            model_version?: string | null;
         };
         /**
          * LockReason
@@ -270,6 +347,99 @@ export interface components {
             role: components["schemas"]["UserRole"];
         };
         /**
+         * PayCycle
+         * @enum {string}
+         */
+        PayCycle: "weekly" | "biweekly" | "monthly";
+        /** Receipt */
+        Receipt: {
+            /**
+             * Batch Id
+             * Format: uuid
+             */
+            batch_id: string;
+            /** Sent */
+            sent: number;
+            /** Delivered */
+            delivered: number;
+            /** Failed */
+            failed: number;
+            /** Gateway Ref */
+            gateway_ref?: string | null;
+            /** Failed Wallet Ids */
+            failed_wallet_ids?: string[];
+        };
+        /** Remedy */
+        Remedy: {
+            /** Remedy Code */
+            remedy_code: string;
+            /** Label */
+            label: string;
+            /** Unit Cost Bdt */
+            unit_cost_bdt: number;
+        };
+        /** RuleBaseline */
+        RuleBaseline: {
+            /** Fired */
+            fired: boolean;
+            /** Action */
+            action: string;
+        };
+        /** ScoreRequest */
+        ScoreRequest: {
+            /** Wallets */
+            wallets: components["schemas"]["WalletHistory"][];
+        };
+        /** ScoreResponse */
+        ScoreResponse: {
+            /** Model Version */
+            model_version: string;
+            /** Tau */
+            tau: number;
+            /** Delta */
+            delta: number;
+            /** Results */
+            results: components["schemas"]["ScoreResult"][];
+        };
+        /** ScoreResult */
+        ScoreResult: {
+            /** Wallet Id */
+            wallet_id: string;
+            /** Weeks Silent */
+            weeks_silent: number;
+            /**
+             * Verdict
+             * @enum {string}
+             */
+            verdict: "attributed" | "refused";
+            cause: components["schemas"]["CauseFamily"] | null;
+            /** Posterior */
+            posterior: {
+                [key: string]: number;
+            };
+            /** Contributions */
+            contributions: components["schemas"]["Contribution"][];
+            /** Refusal Reasons */
+            refusal_reasons: string[];
+            rule_baseline: components["schemas"]["RuleBaseline"];
+            remedy: components["schemas"]["Remedy"] | null;
+        };
+        /** SmsStatus */
+        SmsStatus: {
+            /** Gateway Connected */
+            gateway_connected: boolean;
+            /** Webhook */
+            webhook?: ("delivered" | "failed") | null;
+            /** Sent */
+            sent?: number | null;
+            /** Delivered */
+            delivered?: number | null;
+            /** Failed */
+            failed?: number | null;
+            /** Failed Wallet Ids */
+            failed_wallet_ids?: string[];
+        };
+        /**
          * StoreKind
          * @enum {string}
          */
@@ -291,6 +461,49 @@ export interface components {
             input?: unknown;
             /** Context */
             ctx?: Record<string, never>;
+        };
+        /** WalletHistory */
+        WalletHistory: {
+            /** Wallet Id */
+            wallet_id: string;
+            /** Acquired Week */
+            acquired_week: number;
+            /** Fee Week */
+            fee_week: number;
+            pay_cycle: components["schemas"]["PayCycle"];
+            /** Weeks */
+            weeks: components["schemas"]["WeekRow"][];
+        };
+        /** WeekRow */
+        WeekRow: {
+            /** Week */
+            week: number;
+            /** Txn Count */
+            txn_count: number;
+            /** Amount Bdt */
+            amount_bdt: number;
+            /**
+             * Cashin Count
+             * @default 0
+             */
+            cashin_count: number;
+            /**
+             * Cashout Ok
+             * @default 0
+             */
+            cashout_ok: number;
+            /**
+             * Cashout Fail
+             * @default 0
+             */
+            cashout_fail: number;
+            /** App Share */
+            app_share?: number | null;
+            /**
+             * District Changed
+             * @default false
+             */
+            district_changed: boolean;
         };
     };
     responses: never;
@@ -478,7 +691,9 @@ export interface operations {
     };
     export_batch_api_batches__id__export_get: {
         parameters: {
-            query?: never;
+            query?: {
+                format?: "json" | "csv";
+            };
             header?: {
                 authorization?: string | null;
             };
@@ -496,6 +711,76 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ExportBatchResponse"];
+                    "text/csv": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    redeliver_batch_api_batches__id__redeliver_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeliveryResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    campaign_receipt_api_campaign_receipts_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "x-whyquiet-timestamp": string;
+                "x-whyquiet-signature": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Receipt"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Receipt"];
                 };
             };
             /** @description Validation Error */
@@ -560,6 +845,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AuditEntry"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    score_api_score_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-api-key"?: string | null;
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScoreRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScoreResponse"];
                 };
             };
             /** @description Validation Error */
