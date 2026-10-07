@@ -56,6 +56,8 @@ export type Report = {
     refusal_rate: number;
   }[];
   money: MoneyRow[] | null; // null if src/rules.money not ready at export time
+  money_inputs?: MoneyInputs | null; // counts + constants behind `money`; absent in older bundles
+  refusal_sweep?: RefusalPoint[]; // every (tau, delta) the tuner searches, scored on population B; absent in older bundles
   assumptions: string[]; // every ASSUMED input, one line each
 };
 
@@ -66,6 +68,28 @@ export type MoneyRow = {
   users_recovered: number;
   cost_bdt: number;
   value_bdt: number; // users_recovered * ARPU * ramp - cost
+};
+
+export type MoneyInputs = {
+  n_triaged: number;
+  n_correct: number;
+  n_wrong: number;
+  n_refused: number;
+  arpu_bdt: number;
+  ramp: number;
+  generic_factor: number;
+  msg_cost_bdt: number;
+  avg_remedy_cost_bdt: number;
+};
+
+export type RefusalPoint = { tau: number; delta: number; refusal_rate: number; macro_f1: number };
+
+export const CAUSE_LABELS: Record<Cause, string> = {
+  job_exit: "Job Exit",
+  migration: "Migration",
+  solved_problem: "Solved Problem",
+  fee_shock: "Fee Shock",
+  supply_failure: "Supply Failure",
 };
 
 export type Remedy = {

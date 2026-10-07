@@ -94,3 +94,18 @@ def money_table(n_triaged: int, n_correct: int, n_wrong: int, n_refused: int) ->
         )
 
     return rows
+
+
+def money_inputs(n_triaged: int, n_correct: int, n_wrong: int, n_refused: int) -> dict:
+    """Counts and constants behind `money_table`, so the console can redraw it for any recovery rate."""
+    return {
+        "n_triaged": n_triaged,
+        "n_correct": n_correct,
+        "n_wrong": n_wrong,
+        "n_refused": n_refused,
+        "arpu_bdt": ARPU_BDT,
+        "ramp": RAMP,
+        "generic_factor": GENERIC_FACTOR,
+        "msg_cost_bdt": MSG_COST_BDT,
+        "avg_remedy_cost_bdt": AVG_REMEDY_COST_BDT,
+    }

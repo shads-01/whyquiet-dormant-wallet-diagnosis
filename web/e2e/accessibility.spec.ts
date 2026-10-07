@@ -111,4 +111,21 @@ test.describe("Frontend Accessibility Audits (WCAG 2.1 AA)", () => {
       .analyze();
     expect(results.violations).toEqual([]);
   });
+
+  for (const [name, route, testid] of [
+    ["Five Causes", "/#/causes", "causes-view"],
+    ["Refusal Dial", "/#/calibration", "calibration-view"],
+    ["Evidence with simulator", "/#/evidence", "simulator-card"],
+  ]) {
+    test(`${name} passes WCAG 2.1 AA in light & dark modes (real seed)`, async ({ page }) => {
+      await page.unroute("**/seed.json");
+      await page.goto(route);
+      await expect(page.getByTestId(testid)).toBeVisible();
+      const tags = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"];
+      expect((await new AxeBuilder({ page }).withTags(tags).analyze()).violations).toEqual([]);
+      await page.getByTestId("mode-toggle").click();
+      await expect(page.locator("html")).toHaveAttribute("data-mode", "dark");
+      expect((await new AxeBuilder({ page }).withTags(tags).analyze()).violations).toEqual([]);
+    });
+  }
 });

@@ -19,8 +19,8 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from datagen.generate import main as generate
-from scripts.evaluate import _split, report
-from src.model.score import explain, save
+from scripts.evaluate import _split, refusal_sweep, report
+from src.model.score import explain, predict, save
 from src.model.train import ACCURACY_FLOOR, train
 from src.rules.baseline import rule_baseline
 from src.rules.remedies import REMEDIES
@@ -110,10 +110,12 @@ def export(seed: int, root: Path = ROOT, out: Path = ROOT / "web" / "public" / "
     rep = report(seed, root)
     n_correct = sum(c == t for c, t in zip(causes, truth))
     try:
-        from src.rules.money import ASSUMPTIONS, money_table
-        money = money_table(len(truth), n_correct, len(truth) - n_refused - n_correct, n_refused)
+        from src.rules.money import ASSUMPTIONS, money_inputs, money_table
+        n_wrong = len(truth) - n_refused - n_correct
+        money = money_table(len(truth), n_correct, n_wrong, n_refused)
+        inputs = money_inputs(len(truth), n_correct, n_wrong, n_refused)
     except ImportError:  # plan: carry on with money = null if the rules module is not ready
-        money, ASSUMPTIONS = None, []
+        money, inputs, ASSUMPTIONS = None, None, []
 
     bundle = _round({
         "meta": {
@@ -126,7 +128,8 @@ def export(seed: int, root: Path = ROOT, out: Path = ROOT / "web" / "public" / "
             "honesty_line": HONESTY_LINE,
         },
         "wallets": sample,
-        "report": {**rep, "money": money, "assumptions": ASSUMPTIONS + MODEL_ASSUMPTIONS},
+        "report": {**rep, "money": money, "money_inputs": inputs, "assumptions": ASSUMPTIONS + MODEL_ASSUMPTIONS,
+                   "refusal_sweep": refusal_sweep(predict(booster, X)[0], truth)},
         "remedies": REMEDIES,
     })
     out.parent.mkdir(parents=True, exist_ok=True)
