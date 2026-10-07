@@ -448,7 +448,15 @@ export default function App() {
 
       {/* Main Routed Content */}
       <main id="main-content" tabIndex={-1} className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 focus:outline-none">
-        {walletMatch ? (
+        {!user ? (
+          <div className="max-w-md mx-auto text-center py-16 space-y-4" data-testid="signin-gate">
+            <h1 className="text-lg font-bold text-[var(--text)]">Sign in to continue</h1>
+            <p className="text-sm text-[var(--text-muted)]">Cause Desk is available to signed-in users only.</p>
+            <Button variant="primary" size="sm" onClick={() => setLoginOpen(true)} data-testid="gate-login-btn">
+              Sign In
+            </Button>
+          </div>
+        ) : walletMatch ? (
           <Wallet walletId={walletMatch[1]} onBack={() => (window.location.hash = "#/")} />
         ) : isBatches ? (
           <Batches user={user} onOpenLogin={() => setLoginOpen(true)} />
