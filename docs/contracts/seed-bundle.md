@@ -58,6 +58,7 @@ type Report = {
   fairness: { slice: "worker_type" | "pay_cycle"; group: string; n: number; macro_f1: number; refusal_rate: number }[];
   money: MoneyRow[] | null;        // null if src/rules.money not ready at export time
   assumptions: string[];           // every ASSUMED input, one line each
+  depth?: Depth;                   // ADDITIVE (D62-D66): scripts/depth.py output; full type in web/src/seed.ts
 };
 
 type MoneyRow = {

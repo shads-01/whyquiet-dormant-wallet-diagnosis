@@ -1,0 +1,2 @@
+# LightGBM aborts on CRLF model files (Windows checkouts with core.autocrlf=true)
+src/model/artifacts/*.txt -text

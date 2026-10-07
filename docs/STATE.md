@@ -36,6 +36,7 @@ Update at session start and before ending every session (AGENTS.md "Read first")
 - [x] Other mandatory deliverables named in CONTEXT_v3 section 9 (public GitHub repo with continuous commit history; live deployment reachable by judges)
 
 ## Done
+- Phase 2 ML depth (branch `feat/ml-depth`, D62–D66, 2026-10-07): `scripts/depth.py` adds the refusal coverage curve (0.785 answering all → 0.864 at the shipped 78.3% → 0.930 at 50%), baseline ladder (expert rules 0.720, logistic regression 0.785), AURC 0.080 vs 0.100, bootstrap CI 0.849–0.878, blended-wallet refusal 32.6% vs 17.1%, ablation, calibration under shift (ECE 0.017 A / 0.100 B), label-free checks (ATC 83.2% vs true 78.8%; EM cause mix max error 2.8 pts; drift AUC 1.00), noise dial, unseen cause (41.8% refused vs 21.5%), and value-gated money (beats the rule at 4% and 8%, ties at 1%). Evidence page shows all of it; README §12 and report §4.4, §5.3–5.7, §7.4–7.5 updated.
 - Project scaffolded with official generator & locked stack: Python 3.12/uv, FastAPI + Pydantic v2, Vite + React + TS + Tailwind, types generated from OpenAPI contract
 - Public GitHub repo created: `whyquiet-dormant-wallet-diagnosis` with clean secret scan and CI (check + e2e) green
 - Fresh deploy (D37, 2026-10-04): Supabase project `whyquiet` (`grflsfhkcatoxpjeszxh`, Free, Singapore) with both migrations applied and both demo accounts; Vercel project `whyquiet` (hrittikaaa's projects) at https://whyquiet.vercel.app, `verify_deploy.py` PASS, full write-path flow checked against the new DB.

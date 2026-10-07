@@ -115,7 +115,7 @@ Rather than consuming raw transaction series directly, WhyQuiet computes **20 no
 
 ### 4.2 LightGBM Multi-Class Classifier (`src/model/train.py`)
 - **Algorithm**: Gradient Boosted Decision Trees (LightGBM 4.7+ multiclass objective).
-- **Hyperparameters**: 100 boosting rounds, learning rate 0.05, max depth 5, balanced class weights.
+- **Hyperparameters**: 100 boosting rounds, learning rate 0.05, 15 leaves per tree (no separate depth cap), at least 20 wallets per leaf, balanced class weights.
 - **Explainability**: Tree SHAP values computed natively at inference time via LightGBM's `pred_contrib=True`, returning the top 8 signed feature contributions toward the predicted cause.
 
 ### 4.3 Calibrated Refusal Engine
@@ -127,6 +127,15 @@ $$\text{Verdict} = \begin{cases} \text{"refused"} & \text{if } \max_{c} P(c \mid
   - *"fee_shock vs solved_problem margin 0.08 is below 0.10 (delta)"*
 
 ---
+
+### 4.4 One Wallet, End to End
+Wallet `W-N0S673` (domestic worker, monthly pay, silent 5 weeks; population B, never seen in training):
+1. **Shape.** Normal activity until week 46, then nothing. In the last six active weeks it logged 5 failed cash-outs.
+2. **Features.** `fail_last6 = 5`, `fail_rate_last6 = 0.83` (5 of 6 cash-out attempts failed), plus 18 other ratios against its own baseline.
+3. **Posterior.** Supply failure 0.997; every other cause ≤ 0.002.
+4. **Refusal test.** 0.997 ≥ τ = 0.80 and the margin 0.995 ≥ δ = 0.10, so the model names a cause.
+5. **Why.** Tree SHAP: `fail_last6` +4.94 toward supply failure, far ahead of the next contribution (`app_share_shift` +0.67).
+6. **Action and money.** Remedy: agent float alert plus routing SMS, 5 BDT (ASSUMED). The value gate (§7.4) compares the options. At 4% recovery the remedy is worth +9.36 BDT against +3.09 for the blanket SMS, so it sends the remedy. At 1% the remedy loses money (−1.41), so it falls back to the SMS (+0.40).
 
 ## 5. Experimental Results & Benchmark Validation
 
@@ -149,7 +158,7 @@ Rule Baseline Control        ███                              0.0819 ( 8.2
 | **Generalization Gap** | **0.0983** (9.8%) | $A_{\text{test}}$ F1: 0.9618 | Controlled drop under significant distribution and noise shift. |
 | **Refusal Rate on A-Test** | **9.33%** | 112 / 1,200 wallets | Rejection on ambiguous in-distribution wallets. |
 | **Refusal Rate on B** | **21.73%** | 652 / 3,000 wallets | Refusal automatically scales up as noise and ambiguity rise in Population B. |
-| **Expected Calibration Error** | **0.1001** (10.0%) | 10 equal-width bins | Predicted probabilities are well-calibrated across all classes. |
+| **Expected Calibration Error** | **0.1001** (10.0%) | A-test: 0.017 | Well calibrated in-distribution; overconfident under shift on B (see §5.5). |
 | **Shuffled-Label Control** | **0.1621** | Chance Level: $\approx 0.20$ | Confirms model cannot learn from noise when ground-truth labels are permuted. |
 | **Single Feature Leak Test** | **0.3730** | `cashin_ratio_last4` | No single feature acts as an artificial proxy or leak for cause labels. |
 
@@ -164,6 +173,46 @@ Rule Baseline Control        ███                              0.0819 ( 8.2
 | **Supply Failure**| 27 | 6 | 12 | 25 | **378** | 448 |
 
 ---
+
+### 5.3 Refusal as a Dial, and the Baseline Ladder (`scripts/depth.py`)
+The headline counts only the 78.3% of B wallets the model answers, so the full trade-off is reported: answering every wallet gives macro-F1 0.785; answering the most confident 90 / 80 / 70 / 50% gives 0.828 / 0.856 / 0.887 / 0.930. The shipped point is 0.864 with a 95% bootstrap interval of 0.849–0.878.
+
+| Baseline on B | Answers | Macro-F1 |
+| :--- | :---: | :---: |
+| Always guess the most common cause | 100% | 0.082 |
+| Hand-written analyst rules (thresholds from A-train medians) | 100% | 0.720 |
+| Logistic regression | 100% | 0.785 |
+| LightGBM | 100% | 0.785 |
+| **LightGBM with calibrated refusal** | 78.3% | **0.864** |
+
+Forced to answer everything, logistic regression ties LightGBM on B. LightGBM's advantage is that it knows which answers are risky: area under the risk-coverage curve 0.080 vs 0.100, and it leads at every refusal level. Holding out one pay cycle at a time within population A, LightGBM wins all three folds (0.928 / 0.934 / 0.915 vs 0.905 / 0.894 / 0.901).
+
+### 5.4 Where It Is Right and Wrong
+- **Ambiguity is what gets refused.** Blended (two-cause) wallets: 32.6% refused, 66% accurate when answered. Clean wallets: 17.1% refused, 94% accurate.
+- **Per cause (answered F1):** job exit 0.89, migration 0.87, solved problem 0.89, fee shock 0.80, supply failure 0.87. Fee shock is weakest and is refused most (27%).
+- **Ablation.** Removing one feature family and retraining hurts the cause it was built for: agent failures → supply failure −27 F1 points; location/channel → migration −25; salary/cash-in → job exit −21; fee/ticket → fee shock −18. Burst and volume features overlap, so removing either alone costs solved problem only 5–6 points.
+
+### 5.5 Calibration Under Shift
+Expected calibration error is 0.017 on A-test and 0.100 on B. On B the mean confidence is 88.8% while accuracy is 78.8%; wallets scored about 85% sure are right 67% of the time. Temperature scaling fitted on the A-train validation slice chooses T = 1.05 and only moves B's error to 0.093, so it is not shipped: the miscalibration comes from the shift, not from training. Per-group error on B ranges 0.074 (garment) to 0.123 (retail).
+
+### 5.6 Real-World Readiness: Checks That Need No Labels
+- **Accuracy estimate.** Average Thresholded Confidence ([Garg et al., ICLR 2022](https://arxiv.org/abs/2201.04234)) learns a confidence cut on the A-train validation slice. It estimates 83.2% accuracy on B (true 78.8%, raw confidence 88.8%) and 93.3% on A-test (true 93.4%).
+- **Cause mix of the dormant base.** EM prior adjustment ([Saerens et al., 2002](https://doi.org/10.1162/089976602753284446)) re-estimates cause shares from the posteriors alone. The largest error across the five causes is 2.8 points, against 3.9 for counting top causes and 10.2 for assuming the training mix. The training-frequency prior was chosen over a uniform prior on A-test only (0.008 vs 0.014).
+- **Drift alarm.** A classifier separates A from B with AUC 1.00. Per-feature population stability index flags `weeks_after_fee` (1.16), `base_txn_mean` (0.54), `burst_ratio` (0.24) and `pay_cycle` (0.24). The 0.1 / 0.25 bands are a common rule of thumb (UNVERIFIED).
+
+### 5.7 Stress Tests
+**Noise dial** (population B parameters with weekly noise σ and blended share raised; 1,500 wallets per level, built in memory):
+
+| Level | Mixed wallets | Macro-F1 answered | Refused | True accuracy | ATC estimate |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| A-like noise | 20% | 0.879 | 20.4% | 79.5% | 83.3% |
+| B | 30% | 0.857 | 23.1% | 79.3% | 81.5% |
+| B+ | 45% | 0.813 | 26.7% | 73.4% | 79.7% |
+| B++ | 60% | 0.733 | 29.6% | 67.2% | 76.8% |
+
+Quality degrades gradually and refusal rises with it. The label-free estimate tracks the direction but stays optimistic at the noisiest level.
+
+**Unseen cause** (population C = B plus 20% `device_loss`, a cause absent from A and B: activity simply stops with no prior decline). The model refuses 41.8% of these wallets against 21.5% of known-cause wallets in the same population, and keeps macro-F1 0.853 on the known causes. The remaining device-loss wallets are labelled fee shock (53%) or job exit (29%). Refusal catches what looks ambiguous, not what looks familiar; in deployment, the drift alarm and the cause-mix estimate are the signals that a new cause has appeared.
 
 ## 6. Demographic Parity & Fairness Audit
 
@@ -217,6 +266,20 @@ Where:
 
 ---
 
+### 7.4 Decision-Aware Money: the Value Gate (`src/rules/money.py`)
+Sending every attributed wallet its targeted remedy (§7.2) loses to the cheap SMS at 1% and 4%. The value gate decides per wallet: among *skip*, *blanket SMS* and *the cause's targeted remedy*, take the one with the highest expected value, `P(cause) × recovery × ARPU × RAMP − cost`. Refused wallets are always skipped. Two further ASSUMED inputs: each remedy costs its own unit cost (job exit 15, migration 10, fee shock 25, supply failure 5 BDT), and solved-problem wallets do not come back for any message.
+
+| Recovery Rate | Rule (SMS everyone) | Act on every answer | **Value gate** | Oracle (true cause + gate) |
+| :---: | :---: | :---: | :---: | :---: |
+| 1% | +770 BDT | −20,629 BDT | **+728 BDT** | +1,009 BDT |
+| 4% | +7,579 BDT | −2,431 BDT | **+8,113 BDT** | +12,175 BDT |
+| 8% | +16,658 BDT | +21,833 BDT | **+24,671 BDT** | +38,086 BDT |
+
+With the gate, WhyQuiet beats the rule at 4% and 8% and ties it at 1% (−42 BDT). At 4% the gate sends 1,184 SMS, 307 agent-map referrals and 422 float alerts, and skips 1,087 wallets (refused or likely solved). The gate uses the model's posterior, which is overconfident on B (§5.5), so these values lean optimistic.
+
+### 7.5 Pilot Design
+Randomize triaged wallets within each predicted cause into *targeted remedy* vs *blanket SMS* for 8 weeks. With the ASSUMED 4% targeted vs 1% generic recovery, a two-sided test at α = 0.05 with power 0.8 needs 424 wallets per arm (about 4,240 for a per-cause read-out); if the true lift is only 1% → 2%, it needs 2,319 per arm. The label-free checks in §5.6 run on the pilot ledger from day one. Go/no-go is the measured net value of the value-gated arm against the SMS arm.
+
 ## 8. Governance, Security & Responsible AI Architecture
 
 ### 8.1 Two-Person Maker-Checker Rule
@@ -242,4 +305,5 @@ WhyQuiet demonstrates that MFS dormancy is solvable not through heavier mass-mar
 ### Acknowledged Limitations:
 1. **Simulated Environment**: All experiments use synthetically modeled transaction mechanics. Real-world validation with upay ledger data is required to confirm actual cause priors.
 2. **Inter-MFS Blind Spot**: In a single-operator ledger, the model cannot distinguish between a customer churning to a competitor (e.g. bKash/Nagad) versus general economic dormancy.
-3. **Assumed Economic Constants**: Financial rates (ARPU 120 BDT, RAMP 3.0) are unverified industry estimates and must be calibrated against actual institutional P&L data.
+3. **Overconfidence Under Shift and Unseen Causes**: Calibration error rises from 0.017 to 0.100 under shift, and a cause absent from training is refused only 42% of the time. The label-free accuracy estimate and drift alarm flag both conditions; neither replaces a labelled pilot.
+4. **Assumed Economic Constants**: Financial rates (ARPU 120 BDT, RAMP 3.0) are unverified industry estimates and must be calibrated against actual institutional P&L data.
