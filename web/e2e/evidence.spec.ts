@@ -1,7 +1,7 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
 test.describe("Evidence & ML Rigor Page", () => {
-  test("displays ML rigor panel, reliability diagram, and per-cause F1 breakdown", async ({ page }) => {
+  test("displays ML rigor panel, reliability diagram, and per-cause F1 breakdown", async ({ authedPage: page }) => {
     await page.goto("/#/evidence");
 
     // ML Rigor Panel
@@ -26,7 +26,7 @@ test.describe("Evidence & ML Rigor Page", () => {
     await expect(page.getByTestId("reliability-diagram-chart")).toBeVisible();
   });
 
-  test("displays confusion matrix, per-cause F1 breakdown, and demographic parity fairness tables", async ({ page }) => {
+  test("displays confusion matrix, per-cause F1 breakdown, and demographic parity fairness tables", async ({ authedPage: page }) => {
     await page.goto("/#/evidence");
 
     // Confusion Matrix Table
@@ -51,7 +51,7 @@ test.describe("Evidence & ML Rigor Page", () => {
     await expect(fairnessTable.locator("tbody tr")).not.toHaveCount(0);
   });
 
-  test("economic recovery section: handles rate toggling and renders ASSUMED badges", async ({ page }) => {
+  test("economic recovery section: handles rate toggling and renders ASSUMED badges", async ({ authedPage: page }) => {
     await page.goto("/#/evidence");
 
     // Break-even and Cost Sweep Panels
@@ -88,7 +88,7 @@ test.describe("Evidence & ML Rigor Page", () => {
     await expect(assumptionsBox.locator("li")).not.toHaveCount(0);
   });
 
-  test("displays refusal validity audit and falsifiability exhibits with calibrated numbers", async ({ page }) => {
+  test("displays refusal validity audit and falsifiability exhibits with calibrated numbers", async ({ authedPage: page }) => {
     await page.goto("/#/evidence");
 
     // 5. Refusal Validity Audit
@@ -113,7 +113,7 @@ test.describe("Evidence & ML Rigor Page", () => {
     );
   });
 
-  test("mobile responsive view at 375px width", async ({ page }) => {
+  test("mobile responsive view at 375px width", async ({ authedPage: page }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto("/#/evidence");
 
@@ -127,7 +127,7 @@ test.describe("Evidence & ML Rigor Page", () => {
 });
 
 test.describe("Evidence phase 2 depth sections (real seed.json)", () => {
-  test("shows refusal dial, baselines, error anatomy, calibration, label-free checks and stress tests", async ({ page }) => {
+  test("shows refusal dial, baselines, error anatomy, calibration, label-free checks and stress tests", async ({ authedPage: page }) => {
     await page.goto("/#/evidence");
 
     const dial = page.getByTestId("refusal-dial-card");
@@ -152,7 +152,7 @@ test.describe("Evidence phase 2 depth sections (real seed.json)", () => {
     await expect(page.getByTestId("ml-rigor-panel")).not.toContainText("5.2%");
   });
 
-  test("money section shows the value-gated strategy next to the rule", async ({ page }) => {
+  test("money section shows the value-gated strategy next to the rule", async ({ authedPage: page }) => {
     await page.goto("/#/evidence");
     for (const s of ["rule", "model", "model_ev", "oracle"]) {
       await expect(page.getByTestId(`money-row-${s}`)).toBeVisible();
@@ -160,7 +160,7 @@ test.describe("Evidence phase 2 depth sections (real seed.json)", () => {
     await expect(page.getByTestId("money-row-model_ev")).toContainText("skip");
   });
 
-  test("sample bundle without depth still renders the original four sections", async ({ page }) => {
+  test("sample bundle without depth still renders the original four sections", async ({ authedPage: page }) => {
     await page.route("**/seed.json", (route) => route.abort());
     await page.goto("/#/evidence");
     await expect(page.getByTestId("evidence-view")).toBeVisible();

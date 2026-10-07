@@ -1,9 +1,9 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
 type Seed = { meta: { tau: number; delta: number }; report: { ml: { refusal_rate_b: number; macro_f1_b: number } } };
 
 test.describe("Refusal Dial", () => {
-  test("starts on the shipped setting and matches the headline numbers", async ({ page, request }) => {
+  test("starts on the shipped setting and matches the headline numbers", async ({ authedPage: page, request }) => {
     const seed: Seed = await (await request.get("/seed.json")).json();
     await page.goto("/#/calibration");
     await expect(page.getByTestId("calibration-view")).toBeVisible();
@@ -15,7 +15,7 @@ test.describe("Refusal Dial", () => {
     await expect(page.getByTestId("flip-summary")).toContainText("Same verdicts as the shipped setting");
   });
 
-  test("a stricter dial refuses more, changes sample verdicts, and reset restores the shipped setting", async ({ page }) => {
+  test("a stricter dial refuses more, changes sample verdicts, and reset restores the shipped setting", async ({ authedPage: page }) => {
     await page.goto("/#/calibration");
     const rate = async () => parseFloat((await page.getByTestId("refusal-rate").innerText()).replace("%", ""));
     const before = await rate();

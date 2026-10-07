@@ -1,13 +1,13 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
 test.describe("Queue Page & Triage", () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ authedPage: page }) => {
     // Pin to seed.sample.json: these tests use known sample wallets; real-data.spec.ts covers seed.json.
     await page.route("**/seed.json", (route) => route.fulfill({ status: 404 }));
     await page.goto("/#/");
   });
 
-  test("renders KPI summary cards with counts", async ({ page }) => {
+  test("renders KPI summary cards with counts", async ({ authedPage: page }) => {
     await expect(page.getByTestId("summary-cards")).toBeVisible();
     await expect(page.getByTestId("kpi-total")).toBeVisible();
     await expect(page.getByTestId("kpi-attributed")).toBeVisible();
@@ -15,7 +15,7 @@ test.describe("Queue Page & Triage", () => {
     await expect(page.getByTestId("kpi-refusal-rate")).toBeVisible();
   });
 
-  test("filtering by refused shows only refused rows", async ({ page }) => {
+  test("filtering by refused shows only refused rows", async ({ authedPage: page }) => {
     const verdictSelect = page.getByTestId("filter-verdict");
     await verdictSelect.selectOption("refused");
 
@@ -33,7 +33,7 @@ test.describe("Queue Page & Triage", () => {
     }
   });
 
-  test("filtering by attributed shows only attributed rows", async ({ page }) => {
+  test("filtering by attributed shows only attributed rows", async ({ authedPage: page }) => {
     const verdictSelect = page.getByTestId("filter-verdict");
     await verdictSelect.selectOption("attributed");
 
@@ -49,7 +49,7 @@ test.describe("Queue Page & Triage", () => {
     }
   });
 
-  test("clicking a row navigates to the wallet detail view", async ({ page }) => {
+  test("clicking a row navigates to the wallet detail view", async ({ authedPage: page }) => {
     const firstRow = page.getByTestId("queue-table").locator("tbody tr").first();
     const walletId = await firstRow.locator("td").first().textContent();
     expect(walletId).toBeTruthy();
@@ -60,7 +60,7 @@ test.describe("Queue Page & Triage", () => {
     await expect(page.getByTestId("back-button")).toBeVisible();
   });
 
-  test("quick wallet lookup form validation & submit", async ({ page }) => {
+  test("quick wallet lookup form validation & submit", async ({ authedPage: page }) => {
     const input = page.getByTestId("wallet-lookup-input");
     const submitBtn = page.getByTestId("wallet-lookup-btn");
 
@@ -90,7 +90,7 @@ test.describe("Queue Page & Triage", () => {
     expect(apiCalls).toEqual([]);
   });
 
-  test("clears search input using inline cross button", async ({ page }) => {
+  test("clears search input using inline cross button", async ({ authedPage: page }) => {
     const searchInput = page.getByTestId("search-input");
     await searchInput.fill("Garment");
 
@@ -102,7 +102,7 @@ test.describe("Queue Page & Triage", () => {
     await expect(clearBtn).not.toBeVisible();
   });
 
-  test("toggles light and dark mode in navbar with light mode as default", async ({ page }) => {
+  test("toggles light and dark mode in navbar with light mode as default", async ({ authedPage: page }) => {
     const themeRoot = page.locator(".theme-root");
     await expect(themeRoot).toHaveAttribute("data-mode", "light");
 
@@ -118,7 +118,7 @@ test.describe("Queue Page & Triage", () => {
     await expect(themeRoot).toHaveAttribute("data-mode", "light");
   });
 
-  test("displays empty state when search matches nothing and resets filters", async ({ page }) => {
+  test("displays empty state when search matches nothing and resets filters", async ({ authedPage: page }) => {
     const searchInput = page.getByTestId("search-input");
     await searchInput.fill("NONEXISTENT_WALLET_ID_XYZ");
 

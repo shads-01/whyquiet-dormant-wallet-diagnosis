@@ -1,7 +1,7 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
 test.describe("Wallet Detail & Refusal Page", () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ authedPage: page }) => {
     // Pin to seed.sample.json: these tests use known sample wallets; real-data.spec.ts covers seed.json.
     await page.route("**/seed.json", (route) => route.fulfill({ status: 404 }));
   });
@@ -86,7 +86,7 @@ test.describe("Wallet Detail & Refusal Page", () => {
     await expect(page.getByTestId("posterior-chart-card")).toBeVisible();
   });
 
-  test("empty state: shows helpful not-found message and returns to queue", async ({ page }) => {
+  test("empty state: shows helpful not-found message and returns to queue", async ({ authedPage: page }) => {
     await page.goto("/#/w/W-UNKNOWN99");
 
     await expect(page.getByTestId("wallet-not-found-state")).toBeVisible();
@@ -96,7 +96,7 @@ test.describe("Wallet Detail & Refusal Page", () => {
     await expect(page.getByTestId("queue-view")).toBeVisible();
   });
 
-  test("back button in header returns to triage queue", async ({ page }) => {
+  test("back button in header returns to triage queue", async ({ authedPage: page }) => {
     await page.goto("/#/w/W-7K9A1B");
     await page.getByTestId("back-button").click();
 

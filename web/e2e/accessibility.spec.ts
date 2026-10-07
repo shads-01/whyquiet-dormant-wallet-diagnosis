@@ -1,26 +1,12 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 import AxeBuilder from "@axe-core/playwright";
 
 test.describe("Frontend Accessibility Audits (WCAG 2.1 AA)", () => {
-  test.beforeEach(async ({ page }) => {
-    // Pin to seed.sample.json and mock auth for clean deterministic audits
-    await page.route("**/seed.json", (route) => route.fulfill({ status: 404 }));
-    await page.route("**/api/auth/login", (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          access_token: "mock-token",
-          token_type: "bearer",
-          user_id: "approver@whyquiet.demo",
-          email: "approver@whyquiet.demo",
-          role: "approver",
-        }),
-      })
-    );
-  });
+  // Route mocks are set per-test; sessionStorage is seeded by the authedPage / authedPageApprover fixture.
 
-  test("Triage Queue page passes WCAG 2.1 AA in light & dark modes", async ({ page }) => {
+
+  test("Triage Queue page passes WCAG 2.1 AA in light & dark modes", async ({ authedPage: page }) => {
+    await page.route("**/seed.json", (route) => route.fulfill({ status: 404 }));
     await page.goto("/#/");
     await expect(page.getByTestId("queue-view")).toBeVisible();
 
@@ -39,7 +25,8 @@ test.describe("Frontend Accessibility Audits (WCAG 2.1 AA)", () => {
     expect(darkAxeResults.violations).toEqual([]);
   });
 
-  test("Wallet Detail (Attributed) passes WCAG 2.1 AA", async ({ page }) => {
+  test("Wallet Detail (Attributed) passes WCAG 2.1 AA", async ({ authedPage: page }) => {
+    await page.route("**/seed.json", (route) => route.fulfill({ status: 404 }));
     await page.goto("/#/w/W-7K9A1B");
     await expect(page.getByTestId("wallet-view")).toBeVisible();
     await expect(page.getByTestId("remedy-card")).toBeVisible();
@@ -50,7 +37,8 @@ test.describe("Frontend Accessibility Audits (WCAG 2.1 AA)", () => {
     expect(results.violations).toEqual([]);
   });
 
-  test("Wallet Detail (Refused) passes WCAG 2.1 AA", async ({ page }) => {
+  test("Wallet Detail (Refused) passes WCAG 2.1 AA", async ({ authedPage: page }) => {
+    await page.route("**/seed.json", (route) => route.fulfill({ status: 404 }));
     await page.goto("/#/w/W-6B8C1D");
     await expect(page.getByTestId("wallet-view")).toBeVisible();
     await expect(page.getByTestId("refusal-panel")).toBeVisible();
@@ -61,7 +49,8 @@ test.describe("Frontend Accessibility Audits (WCAG 2.1 AA)", () => {
     expect(results.violations).toEqual([]);
   });
 
-  test("Batches & Governance page passes WCAG 2.1 AA", async ({ page }) => {
+  test("Batches & Governance page passes WCAG 2.1 AA", async ({ authedPage: page }) => {
+    await page.route("**/seed.json", (route) => route.fulfill({ status: 404 }));
     await page.goto("/#/batches");
     await expect(page.getByTestId("batches-view")).toBeVisible();
 
@@ -71,7 +60,8 @@ test.describe("Frontend Accessibility Audits (WCAG 2.1 AA)", () => {
     expect(results.violations).toEqual([]);
   });
 
-  test("Evidence & ML Rigor page passes WCAG 2.1 AA", async ({ page }) => {
+  test("Evidence & ML Rigor page passes WCAG 2.1 AA", async ({ authedPage: page }) => {
+    await page.route("**/seed.json", (route) => route.fulfill({ status: 404 }));
     await page.goto("/#/evidence");
     await expect(page.getByTestId("evidence-view")).toBeVisible();
 
@@ -82,6 +72,7 @@ test.describe("Frontend Accessibility Audits (WCAG 2.1 AA)", () => {
   });
 
   test("Sign In Modal passes WCAG 2.1 AA", async ({ page }) => {
+    await page.route("**/seed.json", (route) => route.fulfill({ status: 404 }));
     await page.goto("/#/");
     await page.getByTestId("open-login-btn").click();
     await expect(page.getByTestId("login-modal")).toBeVisible();
@@ -92,13 +83,25 @@ test.describe("Frontend Accessibility Audits (WCAG 2.1 AA)", () => {
     expect(results.violations).toEqual([]);
   });
 
-  test("Decision Modal passes WCAG 2.1 AA", async ({ page }) => {
+  test("Decision Modal passes WCAG 2.1 AA", async ({ authedPageApprover: page }) => {
+    // Mock login API so the manual sign-in UI flow works if ever needed,
+    // but sessionStorage is already seeded with approver creds by the fixture.
+    await page.route("**/api/auth/login", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          access_token: "mock-token",
+          token_type: "bearer",
+          user_id: "approver@whyquiet.demo",
+          email: "approver@whyquiet.demo",
+          role: "approver",
+        }),
+      })
+    );
+    await page.route("**/seed.json", (route) => route.fulfill({ status: 404 }));
     await page.goto("/#/batches");
-    // Sign in as approver to trigger decision modal
-    await page.getByTestId("open-login-btn").click();
-    await page.getByTestId("login-role-approver").click();
-    await page.getByTestId("login-submit-btn").click();
-    await expect(page.getByTestId("login-modal")).not.toBeVisible();
+    await expect(page.getByTestId("batches-view")).toBeVisible();
 
     // Click Approve on first proposed batch
     const approveBtn = page.locator("[data-testid^='approve-btn-']").first();
@@ -117,8 +120,7 @@ test.describe("Frontend Accessibility Audits (WCAG 2.1 AA)", () => {
     ["Refusal Dial", "/#/calibration", "calibration-view"],
     ["Evidence with simulator", "/#/evidence", "simulator-card"],
   ]) {
-    test(`${name} passes WCAG 2.1 AA in light & dark modes (real seed)`, async ({ page }) => {
-      await page.unroute("**/seed.json");
+    test(`${name} passes WCAG 2.1 AA in light & dark modes (real seed)`, async ({ authedPage: page }) => {
       await page.goto(route);
       await expect(page.getByTestId(testid)).toBeVisible();
       const tags = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"];
