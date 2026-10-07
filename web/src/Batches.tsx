@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { Fragment, useState, useEffect, useMemo, useCallback } from "react";
 import {
   Card,
   Chip,
@@ -13,11 +13,13 @@ import {
   Modal,
 } from "./design/ui";
 import { loadSeed, type SeedBundle, type Cause } from "./seed";
+import SmsPreview from "./SmsPreview";
 import {
   type Batch,
   type UserSession,
   type LockedWallet,
   type AuditEntry,
+  type SmsStatus,
   getStoredUser,
   listBatches,
   listLockedWallets,
@@ -25,7 +27,54 @@ import {
   proposeBatch,
   decideBatch,
   exportBatch,
+  exportBatchCsv,
+  redeliverBatch,
 } from "./api";
+
+/** One line under an approved batch: where its SMS campaign is, plus the one action that makes sense. */
+/** The one SMS action that makes sense now, or null. Retrying is safe: the gateway dedupes on batch id. */
+function smsAction(sms: SmsStatus): string | null {
+  if (sms.sent != null) return null;
+  if (sms.webhook) return "Retry SMS send";
+  return sms.gateway_connected ? "Send to SMS gateway" : null;
+}
+
+function SmsStatusLine({ id, sms, canSend, sending, onSend, onView }: {
+  id: string; sms: SmsStatus; canSend: boolean; sending: boolean; onSend: () => void; onView: () => void;
+}) {
+  let tone: "success" | "warning" | "accent" | "danger" | "neutral";
+  let text: string;
+  const action = smsAction(sms);
+  if (sms.sent != null) {
+    tone = sms.failed ? "warning" : "success";
+    text = `SMS: ${sms.delivered}/${sms.sent} delivered${sms.failed ? `, ${sms.failed} failed` : ""}`;
+  } else if (sms.webhook === "delivered") {
+    tone = "accent";
+    text = "SMS: sent to gateway, awaiting delivery report";
+  } else if (sms.webhook === "failed") {
+    tone = "danger";
+    text = "SMS: gateway unreachable";
+  } else if (sms.gateway_connected) {
+    tone = "warning";
+    text = "SMS: not sent yet";
+  } else {
+    tone = "neutral";
+    text = "SMS: no gateway connected";
+  }
+  return (
+    <div className="mt-1 flex flex-wrap items-center gap-1">
+      <Chip tone={tone} data-testid={`sms-status-${id}`}>{text}</Chip>
+      {action && canSend && (
+        <Button variant="secondary" className="btn-xs" onClick={onSend} loading={sending} data-testid={`sms-send-btn-${id}`}>
+          {action}
+        </Button>
+      )}
+      <Button variant="ghost" className="btn-xs" onClick={onView} data-testid={`sms-view-btn-${id}`}>
+        View SMS
+      </Button>
+    </div>
+  );
+}
 
 const CAUSE_LABELS: Record<Cause, string> = {
   job_exit: "Job Exit",
@@ -116,6 +165,10 @@ export default function Batches({ user: propUser, onOpenLogin }: BatchesProps) {
 
   // Export feedback state
   const [exportingId, setExportingId] = useState<string | null>(null);
+  // SMS gateway send: which batch is sending, and any error to show under it
+  const [sendingId, setSendingId] = useState<string | null>(null);
+  const [smsViewId, setSmsViewId] = useState<string | null>(null);
+  const [deliveryMsg, setDeliveryMsg] = useState<Record<string, string>>({});
 
   const fetchAll = useCallback((filter?: string) => {
     const activeFilter = filter !== undefined ? filter : statusFilter;
@@ -253,6 +306,7 @@ export default function Batches({ user: propUser, onOpenLogin }: BatchesProps) {
           }
         : await decideBatch(batch.id, action, decisionNote);
       setBatches((prev) => prev.map((b) => (b.id === batch.id ? updated : b)));
+      if (!offline && action === "approve") setTimeout(() => fetchAll(), 2000); // pick up the SMS delivery report
       setDecideModal(null);
       setDecisionNote("");
       // Refresh locked wallets and clear any cached audit trail for this batch
@@ -314,6 +368,44 @@ export default function Batches({ user: propUser, onOpenLogin }: BatchesProps) {
       } finally {
         setLoadingAudit((prev) => ({ ...prev, [batchId]: false }));
       }
+    }
+  };
+
+  // CSV for campaign tools: one row per wallet with the bilingual message (server-built, needs the live API)
+  const handleExportCsv = async (batch: Batch) => {
+    setExportingId(batch.id);
+    try {
+      const url = URL.createObjectURL(await exportBatchCsv(batch.id));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `campaign-${batch.id}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setProposeError(err instanceof Error ? err.message : "Failed to export campaign CSV.");
+    } finally {
+      setExportingId(null);
+    }
+  };
+
+  // The gateway's delivery report arrives a moment after the hand-off, so look again shortly after
+  const refreshSmsSoon = () => {
+    fetchAll();
+    setTimeout(() => fetchAll(), 2000);
+  };
+
+  // Send (or retry) an approved batch to the SMS gateway; the outcome also lands in the audit history
+  const handleRedeliver = async (batch: Batch) => {
+    setSendingId(batch.id);
+    setDeliveryMsg(({ [batch.id]: _old, ...rest }) => rest);
+    try {
+      await redeliverBatch(batch.id);
+      refreshSmsSoon();
+    } catch (err) {
+      setDeliveryMsg((m) => ({ ...m, [batch.id]: err instanceof Error ? err.message : "SMS send failed." }));
+    } finally {
+      setSendingId(null);
+      setAuditTrails(({ [batch.id]: _stale, ...rest }) => rest); // refetch history on next open
     }
   };
 
@@ -628,36 +720,35 @@ export default function Batches({ user: propUser, onOpenLogin }: BatchesProps) {
                   const auditError = auditErrors[b.id];
 
                   return (
-                    <tr key={b.id} data-testid={`batch-row-${b.id}`} className="group">
-                      <td colSpan={7} className="p-0 border-b border-[var(--border)]">
-                        <div className="grid grid-cols-7 items-center p-3 sm:px-4 text-xs">
+                    <Fragment key={b.id}>
+                    <tr data-testid={`batch-row-${b.id}`} className="group text-xs">
                           {/* Col 1: Batch ID */}
-                          <div className="font-mono font-bold text-[var(--accent)]">
+                          <td className="font-mono font-bold text-[var(--accent)] break-all">
                             {b.id}
-                          </div>
+                          </td>
 
                           {/* Col 2: Cause & Remedy */}
-                          <div>
+                          <td>
                             <div className="font-medium text-[var(--text)]">
                               {CAUSE_LABELS[b.cause] || b.cause}
                             </div>
                             <div className="text-[10px] font-mono text-[var(--text-muted)]">
                               {b.remedy_code}
                             </div>
-                          </div>
+                          </td>
 
                           {/* Col 3: Wallets */}
-                          <div className="text-right font-mono tnum text-[var(--text)]">
+                          <td className="text-right font-mono tnum text-[var(--text)]">
                             {b.wallet_count.toLocaleString()}
-                          </div>
+                          </td>
 
                           {/* Col 4: Total Cost */}
-                          <div className="text-right font-mono tnum text-[var(--text)]">
+                          <td className="text-right font-mono tnum text-[var(--text)]">
                             {formatBDT(b.wallet_count * b.unit_cost_bdt)}
-                          </div>
+                          </td>
 
                           {/* Col 5: Status */}
-                          <div>
+                          <td>
                             <Chip
                               tone={
                                 b.status === "approved"
@@ -669,21 +760,31 @@ export default function Batches({ user: propUser, onOpenLogin }: BatchesProps) {
                             >
                               {b.status.toUpperCase()}
                             </Chip>
-                          </div>
+                            {isApproved && !offline && b.sms && (
+                              <SmsStatusLine
+                                id={b.id}
+                                sms={b.sms}
+                                canSend={isApprover}
+                                sending={sendingId === b.id}
+                                onSend={() => handleRedeliver(b)}
+                                onView={() => setSmsViewId(b.id)}
+                              />
+                            )}
+                          </td>
 
                           {/* Col 6: Proposer */}
-                          <div className="text-[var(--text-muted)]">
+                          <td className="text-[var(--text-muted)]">
                             <div className="truncate max-w-[130px]" title={b.proposed_by}>
                               {b.proposed_by}
                             </div>
                             <div className="text-[10px] text-[var(--text-faint)]">
                               {new Date(b.created_at).toLocaleDateString()}
                             </div>
-                          </div>
+                          </td>
 
                           {/* Col 7: Actions */}
-                          <div className="text-right">
-                            <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                          <td className="text-right">
+                            <div className="flex items-center justify-end gap-1.5">
                               {/* 1. Proposed Actions */}
                               {isProposed && (
                                 <>
@@ -701,7 +802,7 @@ export default function Batches({ user: propUser, onOpenLogin }: BatchesProps) {
                                         onClick={() => setDecideModal({ batch: b, action: "approve" })}
                                         data-testid={`approve-btn-${b.id}`}
                                         aria-label={`Approve batch ${b.id}`}
-                                        className="text-[11px] px-2 py-0.5 bg-[var(--success)]"
+                                        className="btn-xs"
                                       >
                                         Approve
                                       </Button>
@@ -710,7 +811,7 @@ export default function Batches({ user: propUser, onOpenLogin }: BatchesProps) {
                                         onClick={() => setDecideModal({ batch: b, action: "reject" })}
                                         data-testid={`reject-btn-${b.id}`}
                                         aria-label={`Reject batch ${b.id}`}
-                                        className="text-[11px] px-2 py-0.5 text-[var(--danger)]"
+                                        className="btn-xs text-[var(--danger)]"
                                       >
                                         Reject
                                       </Button>
@@ -731,28 +832,59 @@ export default function Batches({ user: propUser, onOpenLogin }: BatchesProps) {
                                   disabled={exportingId === b.id}
                                   data-testid={`download-json-btn-${b.id}`}
                                   aria-label={`Download campaign JSON for batch ${b.id}`}
-                                  className="text-[11px] px-2 py-0.5"
+                                  className="btn-xs"
                                 >
                                   {exportingId === b.id ? "Exporting..." : "Export JSON"}
                                 </Button>
                               )}
-
+                              {isApproved && !offline && (
+                                <Button
+                                  variant="secondary"
+                                  onClick={() => handleExportCsv(b)}
+                                  disabled={exportingId === b.id}
+                                  data-testid={`download-csv-btn-${b.id}`}
+                                  aria-label={`Download campaign CSV for batch ${b.id}`}
+                                  className="btn-xs"
+                                >
+                                  Export CSV
+                                </Button>
+                              )}
+                              <details className="relative">
+                                <summary
+                                  className="btn btn-ghost btn-xs list-none cursor-pointer"
+                                  aria-label={`More actions for batch ${b.id}`}
+                                  data-testid={`menu-btn-${b.id}`}
+                                >
+                                  &#8943;
+                                </summary>
+                                <div
+                                  className="absolute right-0 z-10 mt-1 flex flex-col items-stretch gap-1 p-1 rounded-md border border-[var(--border)] bg-[var(--surface)] shadow-lg"
+                                  onClick={(e) => e.currentTarget.closest("details")?.removeAttribute("open")}
+                                >
                               {/* 3. Audit History Accordion Toggle */}
                               <Button
                                 variant="ghost"
                                 onClick={() => toggleAudit(b.id)}
                                 data-testid={`history-btn-${b.id}`}
                                 aria-label={`Toggle audit history for batch ${b.id}`}
-                                className="text-[11px] px-1.5 py-0.5 text-[var(--text-muted)] hover:text-[var(--text)]"
+                                className="btn-xs"
                               >
                                 {isExpanded ? "Hide History" : "History"}
                               </Button>
+                                </div>
+                              </details>
                             </div>
-                          </div>
-                        </div>
+                            {deliveryMsg[b.id] && (
+                              <div role="status" className="mt-1 text-[10px] text-[var(--text-muted)]" data-testid={`delivery-msg-${b.id}`}>
+                                {deliveryMsg[b.id]}
+                              </div>
+                            )}
+                          </td>
+                    </tr>
 
                         {/* Expandable Audit Timeline Panel */}
                         {isExpanded && (
+                          <tr><td colSpan={7} className="p-0">
                           <div
                             className="p-3.5 bg-[var(--surface-2)] border-t border-[var(--border)] space-y-2 text-xs"
                             data-testid={`audit-timeline-${b.id}`}
@@ -781,14 +913,23 @@ export default function Batches({ user: propUser, onOpenLogin }: BatchesProps) {
                                         <span className="font-semibold text-[var(--text)] uppercase text-[10px]">
                                           {entry.action.replace("batch.", "")}
                                         </span>
-                                        <Chip tone={entry.actor_role === "approver" ? "success" : "accent"}>
+                                        <Chip tone={entry.actor_role === "approver" ? "success" : entry.actor_role === "system" ? "neutral" : "accent"}>
                                           {entry.actor_role}
                                         </Chip>
                                         <span className="text-[10px] text-[var(--text-faint)] font-mono">
                                           {new Date(entry.created_at).toLocaleString()}
                                         </span>
                                       </div>
-                                      {entry.metadata?.note ? (
+                                      {entry.action === "campaign.receipt" ? (
+                                        <div className="text-[11px] text-[var(--text-muted)]">
+                                          SMS gateway: {String(entry.metadata.delivered)} delivered, {String(entry.metadata.failed)} failed of {String(entry.metadata.sent)} sent.
+                                        </div>
+                                      ) : entry.action.startsWith("campaign.") ? (
+                                        <div className="text-[11px] text-[var(--text-muted)]">
+                                          Webhook {entry.action === "campaign.delivered" ? "delivered" : "failed"}
+                                          {entry.metadata.status_code ? ` (HTTP ${String(entry.metadata.status_code)})` : entry.metadata.error ? ` (${String(entry.metadata.error)})` : ""} for {String(entry.metadata.wallet_count)} wallets.
+                                        </div>
+                                      ) : entry.metadata?.note ? (
                                         <div className="text-[11px] text-[var(--text-muted)] italic">
                                           &ldquo;{String(entry.metadata.note)}&rdquo;
                                         </div>
@@ -803,9 +944,9 @@ export default function Batches({ user: propUser, onOpenLogin }: BatchesProps) {
                               </div>
                             )}
                           </div>
+                          </td></tr>
                         )}
-                      </td>
-                    </tr>
+                    </Fragment>
                   );
                 })}
               </tbody>
@@ -813,6 +954,22 @@ export default function Batches({ user: propUser, onOpenLogin }: BatchesProps) {
           </div>
         )}
       </Card>
+
+      {/* SMS preview: phone mockup + per-wallet delivery result (D56) */}
+      {(() => {
+        const b = batches.find((x) => x.id === smsViewId);
+        if (!b?.sms) return null;
+        return (
+          <SmsPreview
+            batch={b}
+            remedy={bundle?.remedies[b.cause]}
+            onClose={() => setSmsViewId(null)}
+            canRetry={user?.role === "approver" && smsAction(b.sms) !== null}
+            sending={sendingId === b.id}
+            onRetry={() => handleRedeliver(b)}
+          />
+        );
+      })()}
 
       {/* Decision Modal (Approve / Reject with Required Note) */}
       <Modal

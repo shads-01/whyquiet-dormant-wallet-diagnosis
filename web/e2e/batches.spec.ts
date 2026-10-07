@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
 
 // e2e runs without Supabase, so the real /api/auth/login is mocked. user_id equals the offline
 // sample batches' proposed_by ("analyst@whyquiet.demo") so the self-approval rule can be checked.
@@ -145,6 +146,7 @@ test.describe("Batches & Governance Page", () => {
     });
 
     await page.goto("/#/batches");
+    await page.getByTestId(`menu-btn-${id}`).click();
     const historyBtn = page.getByTestId(`history-btn-${id}`);
     await expect(historyBtn).toBeVisible();
     await historyBtn.click();
@@ -254,6 +256,95 @@ test.describe("Batches & Governance Page", () => {
 
     await expect(page.getByTestId("decision-modal")).toContainText("You cannot decide a batch you proposed");
     await expect(page.getByTestId(`batch-row-${id}`)).not.toContainText("APPROVED");
+  });
+
+  test("approved batch shows SMS status; sending reaches the gateway and the delivery report appears", async ({ page }) => {
+    const id = "44444444-4444-4444-8444-444444444444";
+    const now = new Date().toISOString();
+    let sent = false;
+    const wallets = Array.from({ length: 100 }, (_, i) => `W-${String(i).padStart(6, "0")}`);
+    const sms = () => sent
+      ? { gateway_connected: true, webhook: "delivered", sent: 100, delivered: 98, failed: 2,
+          failed_wallet_ids: ["W-000098", "W-000099"] }
+      : { gateway_connected: true, webhook: null, sent: null, delivered: null, failed: null, failed_wallet_ids: [] };
+    await page.route(/\/api\/batches/, (route) => {
+      const url = route.request().url();
+      if (url.includes("/redeliver")) {
+        sent = true;
+        return route.fulfill({ json: { delivered: true, status_code: 200, error: null } });
+      }
+      if (url.includes("/export")) return route.fulfill({ json: {
+        batch_id: id, cause: "fee_shock", remedy_code: "fee_shock_waiver", wallet_ids: wallets, cost_bdt: 2500,
+        approved_by: "approver-id", approved_at: now,
+      } });
+      if (url.includes("/audit")) return route.fulfill({ json: [
+        { id: "a1", actor_id: "approver-id", actor_role: "approver", action: "campaign.delivered", target_id: id,
+          metadata: { status_code: 200, wallet_count: 100 }, created_at: now },
+        { id: "a2", actor_id: null, actor_role: "system", action: "campaign.receipt", target_id: id,
+          metadata: { sent: 100, delivered: 98, failed: 2 }, created_at: now },
+      ] });
+      return route.fulfill({ json: [{
+        id, cause: "fee_shock", remedy_code: "fee_shock_waiver", unit_cost_bdt: 25, wallet_count: 100,
+        status: "approved", proposed_by: "someone-else", decided_by: "approver-id", decided_at: now,
+        decision_note: "ok", created_at: now, sms: sms(),
+      }] });
+    });
+
+    await page.goto("/#/batches");
+    await signIn(page, "approver");
+    await expect(page.getByTestId(`download-csv-btn-${id}`)).toBeVisible();
+    await expect(page.getByTestId(`sms-status-${id}`)).toHaveText("SMS: not sent yet");
+
+    // Preview before sending: the exact message, every wallet pending
+    await page.getByTestId(`sms-view-btn-${id}`).click();
+    const preview = page.getByTestId("sms-preview");
+    await expect(preview.getByTestId("sms-preview-en")).toContainText("cash-out");
+    await expect(preview.getByTestId("sms-preview-bn")).toHaveAttribute("lang", "bn");
+    await expect(preview.getByTestId("sms-wallet-W-000000")).toContainText("pending");
+    const a11y = await new AxeBuilder({ page }).include('[data-testid="sms-preview"]')
+      .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
+    expect(a11y.violations).toEqual([]);
+    await preview.getByRole("button", { name: "Close" }).click();
+
+    await page.getByTestId(`sms-send-btn-${id}`).click();
+    await expect(page.getByTestId(`sms-status-${id}`)).toHaveText("SMS: 98/100 delivered, 2 failed");
+    await expect(page.getByTestId(`sms-send-btn-${id}`)).toHaveCount(0);
+
+    // After the gateway's report: failed wallets first, the rest delivered
+    await page.getByTestId(`sms-view-btn-${id}`).click();
+    await expect(preview.getByTestId("sms-preview-totals")).toContainText("2 failed");
+    const firstRows = preview.getByTestId("sms-preview-wallets").locator("tbody tr");
+    await expect(firstRows.nth(0)).toContainText("W-000098");
+    await expect(firstRows.nth(0)).toContainText("failed");
+    await expect(firstRows.nth(2)).toContainText("delivered");
+    await expect(preview.getByTestId("sms-preview-retry")).toHaveCount(0);
+    await preview.getByRole("button", { name: "Close" }).click();
+
+    await page.getByTestId(`menu-btn-${id}`).click();
+    await page.getByTestId(`history-btn-${id}`).click();
+    await expect(page.getByTestId(`audit-timeline-${id}`)).toContainText("Webhook delivered (HTTP 200) for 100 wallets.");
+    await expect(page.getByTestId(`audit-timeline-${id}`)).toContainText("SMS gateway: 98 delivered, 2 failed of 100 sent.");
+  });
+
+  test("SMS status: gateway down offers a retry; no gateway configured offers nothing", async ({ page }) => {
+    const now = new Date().toISOString();
+    const batch = (id: string, sms: object) => ({
+      id, cause: "fee_shock", remedy_code: "fee_shock_waiver", unit_cost_bdt: 25, wallet_count: 10, status: "approved",
+      proposed_by: "someone-else", decided_by: "approver-id", decided_at: now, decision_note: "ok", created_at: now, sms,
+    });
+    const down = "55555555-5555-4555-8555-555555555555";
+    const none = "66666666-6666-4666-8666-666666666666";
+    await page.route(/\/api\/batches/, (route) => route.fulfill({ json: [
+      batch(down, { gateway_connected: true, webhook: "failed", sent: null, delivered: null, failed: null }),
+      batch(none, { gateway_connected: false, webhook: null, sent: null, delivered: null, failed: null }),
+    ] }));
+
+    await page.goto("/#/batches");
+    await signIn(page, "approver");
+    await expect(page.getByTestId(`sms-status-${down}`)).toHaveText("SMS: gateway unreachable");
+    await expect(page.getByTestId(`sms-send-btn-${down}`)).toHaveText("Retry SMS send");
+    await expect(page.getByTestId(`sms-status-${none}`)).toHaveText("SMS: no gateway connected");
+    await expect(page.getByTestId(`sms-send-btn-${none}`)).toHaveCount(0);
   });
 
   test("persona buttons fill the email and the public demo password", async ({ page }) => {
