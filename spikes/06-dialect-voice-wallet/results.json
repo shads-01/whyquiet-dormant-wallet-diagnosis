@@ -1,0 +1,69 @@
+{
+  "mean_wer": 7.483,
+  "per_file": [
+    {
+      "dialect": "barishal",
+      "file": "train_barishal (1).wav",
+      "wer": 1.069,
+      "ref": "আসসালামু আলাইকুম, আমার নাম হাসিবুর রহমান শুব, ডিপারমেন্ট অব সপটোওয়্যার ইনজিনারিং",
+      "hyp": " Assalamualaikum, amandam Hasebura Munchukov, department of subter engineering, ",
+      "sec": 4.7
+    },
+    {
+      "dialect": "chittagong",
+      "file": "train_chittagong (1).wav",
+      "wer": 10.571,
+      "ref": "কী অবস্তা ভাইয়া, তুঁই গম আসো না? অ বালা আছি। তোঁয়ার বাড়ি খডে দে ভাইয়্যে? আঁর বাড়",
+      "hyp": " I used to go on a go on a go on a go on a go on a go on a go on a go on a go on",
+      "sec": 31.9
+    },
+    {
+      "dialect": "habiganj",
+      "file": "train_habiganj (1).wav",
+      "wer": 4.353,
+      "ref": "আইলাম তোমরার সাতে মাতবার লাইগা। বন্দ খর। সুফিয়া ছিনছ না, মতুইরার মার নাম ওইত্তো।",
+      "hyp": " Kailam, tumrasha temat ballega. Muntere vanam sufiya. No, muntere vanam sufiya.",
+      "sec": 33.5
+    },
+    {
+      "dialect": "kishoreganj",
+      "file": "train_kishoreganj (1).wav",
+      "wer": 6.923,
+      "ref": "বিল্ডিং<> তুমি বাবুল রোডো, বুজছো? মাল দেখতে অইবো। নাহ লাগতো না। দেও বাবু তিনশো ট",
+      "hyp": " How many times do you have to do this? I don't know. I don't know. I don't know",
+      "sec": 33.0
+    },
+    {
+      "dialect": "narail",
+      "file": "train_narail (1).wav",
+      "wer": 2.58,
+      "ref": "আমি তো চইলে আসলাম তুমারে মনে করো যে এর মধ্যি কাইলকে তুমারে ফোন দিলাম, তুমি কলা য",
+      "hyp": " Amito Sola Ashlam, Mune Karazar, Mutei, Kalkedek, Tumara Funti, Lamthur Kalezas",
+      "sec": 30.4
+    },
+    {
+      "dialect": "narsingdi",
+      "file": "train_narsingdi (1).wav",
+      "wer": 13.704,
+      "ref": "আমরা শুরু করি, হ্যাঁ? আমনের, আমনের নামডা? আমার নাম মোহাম্মদ নূর ইসলাম। তা আমরাদি",
+      "hyp": " What are you doing here? What are you doing here? What are you doing here? What",
+      "sec": 29.4
+    },
+    {
+      "dialect": "rangpur",
+      "file": "train_rangpur (1).wav",
+      "wer": 10.091,
+      "ref": "কেমন আসেন? <> ভালো আসো মা। কি খবর এলা? <> কি খবর, শরীল এর অবস্থা খুব খারাপ। <> ত",
+      "hyp": " I don't know what to say, I don't know what to say, I don't know what to say, I",
+      "sec": 31.8
+    },
+    {
+      "dialect": "sandwip",
+      "file": "train_sandwip (1).wav",
+      "wer": 10.571,
+      "ref": "আইচ্ছা। আমনেরা এনজিও সম্পর্কে কিছু জানেন নে? জানি। তো এনজিও, টাকা লই না, আইচ্ছা,",
+      "hyp": " I am an angel, so I am a angel, so I am an angel, so I am an angel, so I am an ",
+      "sec": 48.3
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+{
+  "same_voice_cosine": 0.999,
+  "cross_voice_cosine": 0.996,
+  "margin": 0.003
+}

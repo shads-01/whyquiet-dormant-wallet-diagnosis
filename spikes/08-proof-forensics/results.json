@@ -1,0 +1,55 @@
+{
+  "rows": [
+    {
+      "file": "spikes/08-proof-forensics/real_1.jpg",
+      "label": "REAL",
+      "exif": false,
+      "ela_mean": 0.207,
+      "noise_var": 40.696,
+      "qtables": 2
+    },
+    {
+      "file": "spikes/08-proof-forensics/real_2.jpg",
+      "label": "REAL",
+      "exif": false,
+      "ela_mean": 0.207,
+      "noise_var": 39.676,
+      "qtables": 2
+    },
+    {
+      "file": "spikes/08-proof-forensics/real_3.jpg",
+      "label": "REAL",
+      "exif": false,
+      "ela_mean": 0.212,
+      "noise_var": 42.587,
+      "qtables": 2
+    },
+    {
+      "file": "spikes/08-proof-forensics/forge_1.jpg",
+      "label": "FORGE",
+      "exif": false,
+      "ela_mean": 0.168,
+      "noise_var": 50.473,
+      "qtables": 2
+    },
+    {
+      "file": "spikes/08-proof-forensics/forge_2.jpg",
+      "label": "FORGE",
+      "exif": false,
+      "ela_mean": 0.169,
+      "noise_var": 50.467,
+      "qtables": 2
+    },
+    {
+      "file": "spikes/08-proof-forensics/forge_3.jpg",
+      "label": "FORGE",
+      "exif": false,
+      "ela_mean": 0.17,
+      "noise_var": 51.205,
+      "qtables": 2
+    }
+  ],
+  "ela_threshold": 0.189,
+  "ela_acc": 1.0,
+  "note": "Forged ELA_mean (0.168-0.170) is LOWER than real (0.207-0.212) because the edit wipes a flat region then re-encodes; threshold 0.189 with forged<real direction classifies 6/6. Caveat: mock-rendered images, not real phone screenshots."
+}

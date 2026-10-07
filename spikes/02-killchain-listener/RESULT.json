@@ -1,0 +1,29 @@
+[
+  {
+    "file": "hook_authority.mp3",
+    "stage": "authority",
+    "wer": 1.0,
+    "ref": "আসসালামু আলাইকুম, আমি উপায় অফিস থেকে বলছি। আপনার একাউন্ট ভেরিফাই করতে হবে।",
+    "hyp": "Assalamu alaikum, ami upa'i office teke bolchi  Appner account verify court de habi",
+    "lang_prob": 1,
+    "sec": 1.5
+  },
+  {
+    "file": "urgency_ask.mp3",
+    "stage": "urgency+ask",
+    "wer": 1.0,
+    "ref": "জরুরি! পাঁচ মিনিটের মধ্যে পিন নম্বর দিন, নাহলে একাউন্ট বন্ধ হয়ে যাবে।",
+    "hyp": "Joruri, 5 minute mode pin number din, na holle account bond hoeja be.",
+    "lang_prob": 1,
+    "sec": 5.5
+  },
+  {
+    "file": "neutral.mp3",
+    "stage": "neutral",
+    "wer": 1.0,
+    "ref": "আজ বিকালে বাজার থেকে চাল আনতে ভুলবেন না।",
+    "hyp": "Aaj bikale bajar te kechal antibulbanna",
+    "lang_prob": 1,
+    "sec": 1.0
+  }
+]
