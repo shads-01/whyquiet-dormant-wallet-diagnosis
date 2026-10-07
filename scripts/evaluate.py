@@ -20,7 +20,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from src.model.features import features
-from src.model.train import CAUSES, decide, fit, predict, train
+from src.model.train import CAUSES, DELTAS, TAUS, decide, fit, predict, train
 
 
 def macro_f1(truth: Sequence[str], pred: Sequence[str | None]) -> float:
@@ -55,6 +55,21 @@ def fairness(wallets: pd.DataFrame, truth: list[str], pred: list[str | None]) ->
             rows.append({"slice": col, "group": str(group), "n": len(idx),
                          "macro_f1": macro_f1([truth[i] for i in idx], p),
                          "refusal_rate": float(np.mean([x is None for x in p]))})
+    return rows
+
+
+def refusal_sweep(proba: np.ndarray, truth: list[str]) -> list[dict]:
+    """Refusal rate and macro-F1 on kept wallets for every (tau, delta) the tuner searches (same rule as `decide`)."""
+    top2 = np.sort(proba, axis=1)[:, -2:]
+    top, margin = top2[:, 1], top2[:, 1] - top2[:, 0]
+    guess = np.array(CAUSES)[proba.argmax(axis=1)]
+    rows = []
+    for tau in TAUS:
+        for delta in DELTAS:
+            kept = (top >= tau) & (margin >= delta)
+            pred = [g if k else None for g, k in zip(guess, kept)]
+            rows.append({"tau": float(tau), "delta": float(delta), "refusal_rate": float(1 - kept.mean()),
+                         "macro_f1": macro_f1(truth, pred)})
     return rows
 
 

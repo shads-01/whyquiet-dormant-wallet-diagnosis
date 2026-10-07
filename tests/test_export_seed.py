@@ -61,7 +61,7 @@ def test_each_wallet_matches_contract(bundle: dict):
 
 def test_report_and_remedies(bundle: dict):
     report = bundle["report"]
-    assert set(report) == {"ml", "confusion_b", "fairness", "money", "assumptions", "depth"}
+    assert set(report) == {"ml", "confusion_b", "fairness", "money", "money_inputs", "assumptions", "refusal_sweep", "depth"}
     assert report["depth"]["coverage"]["operating_point"]["macro_f1"] == report["ml"]["macro_f1_b"]
     assert report["ml"]["macro_f1_b"] > report["ml"]["rule_baseline_f1_b"]
     assert len(report["money"]) == 9
@@ -69,3 +69,21 @@ def test_report_and_remedies(bundle: dict):
         (s, r) for s in ("rule", "model", "oracle") for r in (0.01, 0.04, 0.08)}
     assert report["assumptions"] and all("ASSUMED" in a for a in report["assumptions"])
     assert set(bundle["remedies"]) == CAUSE_SET
+
+
+def test_refusal_sweep_contains_the_shipped_operating_point(bundle: dict):
+    sweep, meta, ml = bundle["report"]["refusal_sweep"], bundle["meta"], bundle["report"]["ml"]
+    assert len(sweep) == 63 and all(set(p) == {"tau", "delta", "refusal_rate", "macro_f1"} for p in sweep)
+    here = next(p for p in sweep if p["tau"] == meta["tau"] and p["delta"] == meta["delta"])
+    assert here["refusal_rate"] == pytest.approx(ml["refusal_rate_b"], abs=1e-3)
+    assert here["macro_f1"] == pytest.approx(ml["macro_f1_b"], abs=1e-3)
+
+
+def test_money_inputs_rebuild_the_money_table(bundle: dict):
+    m = bundle["report"]["money_inputs"]
+    assert m["n_correct"] + m["n_wrong"] + m["n_refused"] == m["n_triaged"] == 3000
+    model = {r["recovery_rate"]: r for r in bundle["report"]["money"] if r["strategy"] == "model"}
+    for rate, row in model.items():
+        recovered = m["n_correct"] * rate + m["n_wrong"] * rate * m["generic_factor"]
+        cost = (m["n_triaged"] - m["n_refused"]) * m["avg_remedy_cost_bdt"]
+        assert recovered * m["arpu_bdt"] * m["ramp"] - cost == pytest.approx(row["value_bdt"], abs=0.5)

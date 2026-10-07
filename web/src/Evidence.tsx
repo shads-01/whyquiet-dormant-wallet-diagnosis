@@ -12,6 +12,7 @@ import {
 } from "recharts";
 import { loadSeed, type SeedBundle, type Cause } from "./seed";
 import { Card, Chip, Table, Skeleton, ErrorState, EmptyState } from "./design/ui";
+import MoneySimulator from "./MoneySimulator";
 import {
   CalibrationSection,
   ErrorAnatomySection,
@@ -527,6 +528,7 @@ export default function Evidence() {
           </ul>
         </div>
       </Card>
+      {report.money_inputs && <MoneySimulator inputs={report.money_inputs} />}
     </div>
   );
 }
