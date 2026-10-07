@@ -7,11 +7,22 @@ import pandas as pd
 import pytest
 
 from datagen.generate import main as generate
-from scripts.evaluate import confusion, ece, fairness, macro_f1, report
+from scripts.evaluate import (
+    calibration_bins,
+    confusion,
+    ece,
+    fairness,
+    macro_f1,
+    per_cause_f1_b,
+    report,
+)
 from src.model.train import CAUSES
 
-ML_KEYS = {"macro_f1_a_test", "macro_f1_b", "gap", "refusal_rate_a", "refusal_rate_b", "ece_b",
-           "shuffled_label_f1_b", "best_single_feature", "best_single_feature_f1_b", "rule_baseline_f1_b"}
+ML_KEYS = {
+    "macro_f1_a_test", "macro_f1_b", "gap", "refusal_rate_a", "refusal_rate_b", "ece_b",
+    "shuffled_label_f1_b", "best_single_feature", "best_single_feature_f1_b", "rule_baseline_f1_b",
+    "refusal_validity", "verdict_flip_rate",
+}
 
 
 def test_macro_f1_ignores_refused_wallets():
@@ -38,6 +49,24 @@ def test_confusion_counts_attributed_only_rows_true():
     assert sum(map(sum, out["matrix"])) == 2
 
 
+def test_calibration_bins_and_per_cause_f1():
+    proba = np.tile([0.8, 0.05, 0.05, 0.05, 0.05], (10, 1))
+    truth = ["job_exit"] * 8 + ["migration"] * 2
+    bins = calibration_bins(proba, truth, bins=10)
+    assert len(bins) == 10
+    assert sum(b["n"] for b in bins) == 10
+    total_n = 10
+    weighted_ece = sum(abs(b["empirical_accuracy"] - b["mean_confidence"]) * (b["n"] / total_n) for b in bins if b["n"] > 0)
+    assert weighted_ece == pytest.approx(ece(proba, truth, bins=10))
+
+    per_cause = per_cause_f1_b(["job_exit", "migration"], ["job_exit", None])
+    assert len(per_cause) == len(CAUSES)
+    assert per_cause[0]["cause"] == "job_exit"
+    assert per_cause[0]["precision"] == 1.0
+    assert per_cause[0]["recall"] == 1.0
+    assert per_cause[0]["support"] == 1
+
+
 def test_fairness_rows_per_slice_and_group():
     wallets = pd.DataFrame({"worker_type": ["garment", "garment", "retail"],
                             "pay_cycle": ["weekly", "monthly", "monthly"]})
@@ -56,12 +85,19 @@ def rep(tmp_path_factory: pytest.TempPathFactory) -> dict:
 
 
 def test_report_matches_contract_shape(rep: dict):
-    assert set(rep) == {"ml", "confusion_b", "fairness"}
+    assert set(rep) == {"ml", "confusion_b", "fairness", "calibration_bins", "per_cause_f1_b"}
     assert set(rep["ml"]) == ML_KEYS
     assert rep["ml"]["gap"] == pytest.approx(rep["ml"]["macro_f1_a_test"] - rep["ml"]["macro_f1_b"])
     assert isinstance(rep["ml"]["best_single_feature"], str) and rep["ml"]["best_single_feature"]
     assert len(rep["fairness"]) == 4 + 3  # 4 worker types + 3 pay cycles
     assert all(isinstance(v, int) for row in rep["confusion_b"]["matrix"] for v in row)
+    assert len(rep["calibration_bins"]) == 10
+    total_b = sum(b["n"] for b in rep["calibration_bins"])
+    assert total_b == 3000
+    weighted_ece = sum(abs(b["empirical_accuracy"] - b["mean_confidence"]) * (b["n"] / total_b) for b in rep["calibration_bins"] if b["n"] > 0)
+    assert weighted_ece == pytest.approx(rep["ml"]["ece_b"])
+    assert len(rep["per_cause_f1_b"]) == len(CAUSES)
+    assert {x["cause"] for x in rep["per_cause_f1_b"]} == set(CAUSES)
 
 
 def test_report_controls_sit_below_the_model(rep: dict):
@@ -71,3 +107,17 @@ def test_report_controls_sit_below_the_model(rep: dict):
     assert ml["best_single_feature_f1_b"] < ml["macro_f1_b"]
     assert 0 < ml["refusal_rate_a"] and 0 < ml["refusal_rate_b"]
     assert 0 <= ml["ece_b"] <= 1
+    rv = ml["refusal_validity"]
+    assert rv["refusal_rate_blended"] > rv["refusal_rate_clean"]
+    assert rv["enrichment_ratio"] > 1.3
+    assert rv["forced_error_refused"] > rv["forced_error_attributed"]
+    assert 0 <= ml["verdict_flip_rate"] <= 1
+
+
+def test_population_c_adversarial():
+    from scripts.population_c import evaluate_population_c
+    res = evaluate_population_c(42)
+    assert res["n_wallets"] == 3000
+    assert 0.0 < res["refusal_rate"] < 1.0
+    assert 0.0 < res["macro_f1"] < 1.0
+

@@ -9,6 +9,7 @@
 [![React 19](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev)
 [![Supabase](https://img.shields.io/badge/Supabase-3FCF8E?logo=supabase&logoColor=white)](https://supabase.com)
 [![Data: synthetic only](https://img.shields.io/badge/data-synthetic%20only-blue)](#11-data)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 **Live demo: https://whyquiet.vercel.app** (no login needed for the read-only console)
 
@@ -71,7 +72,7 @@ For **upay's MFS operations team**, **sending the same "come back" SMS to every 
 | **Triage Queue** | `#/` | 400 population-B wallets (300 attributed, 100 refused) with verdict, cause, confidence, weeks silent, and what the 3-week rule would have done. Filter by verdict and cause, search, sort. Quick wallet lookup with `W-XXXXXX` format validation. |
 | **Wallet Detail** | `#/w/<wallet_id>` | Weekly decline-shape chart with the silent window shaded; 5-cause posterior bar chart with the τ (confidence bar) line; top 8 signed feature contributions; "rule vs Cause Desk" comparison; remedy card with unit cost and bilingual message preview. |
 | **Refusal view** | `#/w/<refused id>` | Headline *"No attributable cause. I will not spend your money here."*, the exact refusal reasons (τ and/or δ test that failed), and no action buttons. |
-| **Evidence** | `#/evidence` | Population-B metrics (macro-F1, A→B gap, refusal rates, calibration error), rule baseline, shuffled-label control, best single feature, confusion matrix, subgroup table, and the money table with a 1% / 4% / 8% recovery-rate switch. All ASSUMED inputs are listed. |
+| **Evidence** | `#/evidence` | Population-B metrics (macro-F1, A→B gap, refusal rates, calibration error), rule baseline, shuffled-label control, best single feature, reliability diagram (confidence calibration), per-cause F1 breakdown, confusion matrix, subgroup table, cause-specific break-even rates, cost-sensitivity sweep, and the money table with a 1% / 4% / 8% recovery-rate switch. All ASSUMED inputs are listed. |
 | **Batches** | `#/batches` | Propose a cause-targeted batch (analyst), approve/reject with a required note (approver), download an approved batch as a campaign JSON. |
 | Design system | `#/design` | Style tokens and components used by the console. |
 | Light/dark mode | header toggle | Stored per browser. |
@@ -441,15 +442,22 @@ Each wallet gets 52 weeks of weekly rows (`txn_count`, `amount_bdt`, `cashin_cou
 
 How to read this fairly: the model's F1 counts only the 78.3% of B wallets it attributes; the controls cannot refuse and are scored on all of B. Refusal is the price of the higher accuracy, and it is reported next to it.
 
-**Money model** (`src/rules/money.py`, all of population B, 3,000 wallets; every input ASSUMED: ARPU 120 BDT/month, 3-month value ramp, generic SMS 0.50 BDT and 25% as effective as a targeted remedy, targeted remedy 11 BDT on average):
+**Economic Recovery & Price-Aware Routing** (`src/rules/money.py`, `src/rules/routing.py`, all of population B, 3,000 wallets; every input ASSUMED: ARPU 120 BDT/month, 3-month value ramp, generic SMS 0.50 BDT and 25% as effective as a targeted remedy, cause-specific targeted remedies: `supply_failure` 5 BDT, `migration` 10 BDT, `job_exit` 15 BDT, `fee_shock` 25 BDT, `solved_problem` 0 BDT; break-even rates 1.39%, 2.78%, 4.17%, 6.94%):
 
-| Recovery rate | Rule (SMS everyone) net BDT | WhyQuiet net BDT | Oracle net BDT |
-| --- | ---: | ---: | ---: |
-| 1% | +1,200 | −18,231 | −22,200 |
-| 4% | +9,300 | +4,560 | +10,200 |
-| 8% | +20,100 | +34,947 | +53,400 |
+| Recovery rate | Rule (SMS everyone) net BDT | Unrouted Model net BDT | WhyQuiet Routed net BDT | Oracle net BDT |
+| --- | ---: | ---: | ---: | ---: |
+| 1% | +1,200.00 | −20,606.50 | +1,010.80* | −19,945.00 |
+| 4% | +9,300.00 | −2,341.00 | +10,125.10 | +305.00 |
+| 8% | +20,100.00 | +22,013.00 | +28,999.50 | +27,305.00 |
 
-Honest reading: with these assumed costs, cause targeting only beats the cheap blanket SMS when the targeted recovery rate is high (8%); at 1% and 4% the rule's low cost wins. The point of the table is to make that break-even visible and adjustable, not to claim a win. Real recovery rates and costs are exactly what upay data would need to supply.
+*\*At 1% recovery, blanket SMS also credits completed-lifecycle (`solved_problem`) wallets; like-for-like on actionable wallets, routed matches blanket.*
+
+**Headline takeaways:**
+1. **Never worse than blanket SMS like-for-like**: Cause break-even thresholds range from 1.39% (`supply_failure`) to 6.94% (`fee_shock`). Price-aware routing dynamically falls back to blanket SMS whenever expected remedy value is non-superior.
+2. **At 4% recovery, routed beats blanket by +8.9%** (+10,125.10 BDT vs. +9,300.00 BDT net value); **at 8% by +44.3%** (+28,999.50 BDT vs. +20,100.00 BDT net value) on Population B (simulation, ASSUMED inputs).
+3. **Upay Scale Projection** (ASSUMED: Upay cause mix = synthetic population B; base ~7M stale late 2022; Bangladesh Bank industry inactive share 63.57% as of Feb 2025 yielding 4,449,933 dormant wallets, 1.0x cost scale): central scenario routed net value is **+1.50M BDT at 1%** (matches blanket like-for-like), **+15.02M BDT at 4%** (+1.22M BDT advantage over blanket SMS), and **+43.02M BDT at 8%** (+13.20M BDT advantage over blanket SMS).
+4. **Refusal reframe**: Calibrated refusal routes 652 ambiguous wallets to the cheap blanket message instead of a costly targeted remedy; avoided targeted spend = 9,170 BDT (8,844 BDT net of blanket SMS; recomputed under per-cause costs).
+5. **Not yet measured in production**: Proposed 2-week pilot protocol (`docs/PILOT_PROTOCOL.md`), $n=424$ wallets per arm (1,272 total across 3 arms) from `scripts/pilot_sample_size.py` at 4% benchmark, with pre-registered stop rule = per-cause break-even rate $r^* = \text{cost} / 360\text{ BDT}$.
 
 ---
 

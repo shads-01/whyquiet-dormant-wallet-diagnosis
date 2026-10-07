@@ -6,13 +6,22 @@ test.describe("Wallet Detail & Refusal Page", () => {
     await page.route("**/seed.json", (route) => route.fulfill({ status: 404 }));
   });
 
-  test("attributed wallet: displays remedy, bilingual copy, decline shape, and posterior charts", async ({ page }) => {
+  test("attributed wallet: displays remedy, bilingual copy, boundary transparency notice, and charts", async ({ page }) => {
     // Navigate to known attributed wallet from sample seed
     await page.goto("/#/w/W-7K9A1B");
 
     // Check Header & Verdict
     await expect(page.getByTestId("wallet-id-header")).toHaveText("W-7K9A1B");
     await expect(page.getByTestId("wallet-verdict-chip")).toHaveText("Attributed");
+
+    // Check Boundary Badge & Notice (W-7K9A1B has top prob 0.86 < 0.90)
+    await expect(page.getByTestId("boundary-badge")).toBeVisible();
+    await expect(page.getByTestId("boundary-notice")).toBeVisible();
+    await expect(page.getByTestId("boundary-notice")).toContainText(
+      "Near the refusal boundary — a small change in the decline shape would flip this verdict to refused."
+    );
+    await expect(page.getByTestId("boundary-notice")).toContainText("0.86");
+    await expect(page.getByTestId("boundary-notice")).toContainText("0.80");
 
     // Check Rule vs Model comparison
     await expect(page.getByTestId("rule-vs-model-card")).toBeVisible();
@@ -31,7 +40,7 @@ test.describe("Wallet Detail & Refusal Page", () => {
     await expect(page.getByTestId("contributions-card")).toBeVisible();
   });
 
-  test("refused wallet: displays exact refusal headline, reasons, and no action buttons", async ({ page }) => {
+  test("refused wallet: displays exact refusal headline, reasons, boundary transparency block, and no action buttons", async ({ page }) => {
     // Navigate to known refused wallet from sample seed
     await page.goto("/#/w/W-6B8C1D");
 
@@ -51,8 +60,26 @@ test.describe("Wallet Detail & Refusal Page", () => {
     await expect(reasonsList).toBeVisible();
     await expect(reasonsList.locator("li")).not.toHaveCount(0);
 
-    // Verify NO action buttons exist on the refusal card
+    // Check Boundary Transparency: "What would change this verdict" block
+    const whatWouldChangeBlock = page.getByTestId("what-would-change-block");
+    await expect(whatWouldChangeBlock).toBeVisible();
+    await expect(whatWouldChangeBlock).toContainText("What Would Change This Verdict");
+
+    // Verify numerical metrics against dynamic thresholds (tau=0.50, delta=0.10 in sample seed)
+    const probMetric = page.getByTestId("boundary-prob-metric");
+    await expect(probMetric).toBeVisible();
+    await expect(probMetric).toContainText("0.38");
+    await expect(page.getByTestId("tau-target")).toContainText("0.50");
+
+    const marginMetric = page.getByTestId("boundary-margin-metric");
+    await expect(marginMetric).toBeVisible();
+    await expect(marginMetric).toContainText("0.07");
+    await expect(page.getByTestId("delta-target")).toContainText("0.10");
+
+    // Verify NO action buttons or interactive controls exist on the refusal card (D13: refusals are terminal)
     await expect(refusalPanel.locator("button")).toHaveCount(0);
+    await expect(refusalPanel.locator("input")).toHaveCount(0);
+    await expect(refusalPanel.locator("select")).toHaveCount(0);
 
     // Check decline shape and posterior charts are rendered
     await expect(page.getByTestId("decline-shape-card")).toBeVisible();

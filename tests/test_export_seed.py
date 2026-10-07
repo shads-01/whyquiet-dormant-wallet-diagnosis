@@ -61,10 +61,22 @@ def test_each_wallet_matches_contract(bundle: dict):
 
 def test_report_and_remedies(bundle: dict):
     report = bundle["report"]
-    assert set(report) == {"ml", "confusion_b", "fairness", "money", "assumptions"}
+    assert set(report) == {
+        "ml", "confusion_b", "fairness", "calibration_bins", "per_cause_f1_b", "money", "break_even", "sweep", "routing_plan", "assumptions",
+        "population_c", "pilot",
+    }
     assert report["ml"]["macro_f1_b"] > report["ml"]["rule_baseline_f1_b"]
-    assert len(report["money"]) == 9
+    assert len(report["calibration_bins"]) == 10
+    assert len(report["per_cause_f1_b"]) == len(CAUSE_SET)
+    assert report["population_c"] and report["population_c"]["n_wallets"] == 3000
+    assert report["pilot"] and report["pilot"]["n_per_arm"] == 424
+    assert len(report["money"]) == 12
     assert {(r["strategy"], r["recovery_rate"]) for r in report["money"]} == {
-        (s, r) for s in ("rule", "model", "oracle") for r in (0.01, 0.04, 0.08)}
+        (s, r) for s in ("rule", "model", "oracle", "routed") for r in (0.01, 0.04, 0.08)}
+    assert set(report["break_even"].keys()) == CAUSE_SET
+    assert report["break_even"]["solved_problem"] is None
+    assert len(report["sweep"]) == 36
+    assert {r["cost_scale"] for r in report["sweep"]} == {0.5, 1.0, 1.5}
+    assert report["routing_plan"] and set(report["routing_plan"].keys()) == {"0.01", "0.04", "0.08"}
     assert report["assumptions"] and all("ASSUMED" in a for a in report["assumptions"])
     assert set(bundle["remedies"]) == CAUSE_SET

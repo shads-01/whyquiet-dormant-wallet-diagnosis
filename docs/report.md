@@ -194,26 +194,34 @@ Where:
 - **RAMP**: 3.0 months average active lifetime value multiplier (`# ASSUMED`).
 - **Generic Factor**: Generic messages achieve only 25% of targeted remedy effectiveness (`# ASSUMED`).
 - **Generic SMS Cost**: 0.50 BDT / wallet (`# ASSUMED`).
-- **Targeted Remedy Costs**: Averaging 11.0 BDT across causes (`job_exit`: 15 BDT, `migration`: 10 BDT, `solved_problem`: 0 BDT, `fee_shock`: 25 BDT, `supply_failure`: 5 BDT) (`# ASSUMED`).
+- **Targeted Remedy Costs**: Cause-specific unit costs from `REMEDIES` (`supply_failure`: 5.00 BDT, `migration`: 10.00 BDT, `job_exit`: 15.00 BDT, `fee_shock`: 25.00 BDT, `solved_problem`: 0.00 BDT) (`# ASSUMED`).
+- **Break-Even Recovery Rates**: $\text{Cost} / (\text{ARPU} \times \text{RAMP}) = \text{Cost} / 360\text{ BDT}$ (`supply_failure`: 1.39%, `migration`: 2.78%, `job_exit`: 4.17%, `fee_shock`: 6.94%, `solved_problem`: N/A).
 
 ### 7.2 Strategy Comparison Across Recovery Sweep (Population B, $N=3,000$)
 
 | Recovery Rate | Strategy | Actioned Wallets | Recovered Users | Campaign Cost | Net Value (BDT) |
 | :---: | :--- | :---: | :---: | :---: | :---: |
-| **1% (Pessimistic)** | Rule Baseline | 3,000 | 7.50 | 1,500.00 BDT | **+1,200.00 BDT** |
-| | **WhyQuiet Model** | **2,348** | **21.10** | **25,828.00 BDT** | **-18,231.10 BDT** |
-| | Oracle (Upper Bound) | 3,000 | 30.00 | 33,000.00 BDT | -22,200.00 BDT |
-| **4% (Base Case)** | Rule Baseline | 3,000 | 30.00 | 1,500.00 BDT | **+9,300.00 BDT** |
-| | **WhyQuiet Model** | **2,348** | **84.41** | **25,828.00 BDT** | **+4,559.60 BDT** |
-| | Oracle (Upper Bound) | 3,000 | 120.00 | 33,000.00 BDT | +10,200.00 BDT |
-| **8% (Optimistic)** | Rule Baseline | 3,000 | 60.00 | 1,500.00 BDT | **+20,100.00 BDT** |
-| | **WhyQuiet Model** | **2,348** | **168.82** | **25,828.00 BDT** | **+34,947.20 BDT** |
-| | Oracle (Upper Bound) | 3,000 | 240.00 | 33,000.00 BDT | +53,400.00 BDT |
+| **1% (Pessimistic)** | Rule Baseline (Blanket SMS) | 3,000 | 7.50 | 1,500.00 BDT | **+1,200.00 BDT** |
+| | Unrouted Model | 1,875 | 16.91 | 26,695.00 BDT | -20,606.50 BDT |
+| | **WhyQuiet Routed Strategy** | **2,527** | **6.32** | **1,263.50 BDT** | **+1,010.80 BDT\*** |
+| | Oracle (Upper Bound) | 1,875 | 18.75 | 26,695.00 BDT | -19,945.00 BDT |
+| **4% (Base Case)** | Rule Baseline (Blanket SMS) | 3,000 | 30.00 | 1,500.00 BDT | **+9,300.00 BDT** |
+| | Unrouted Model | 1,875 | 67.65 | 26,695.00 BDT | -2,341.00 BDT |
+| | **WhyQuiet Routed Strategy** | **2,527** | **45.46** | **6,240.50 BDT** | **+10,125.10 BDT** |
+| | Oracle (Upper Bound) | 1,875 | 75.00 | 26,695.00 BDT | +305.00 BDT |
+| **8% (Optimistic)** | Rule Baseline (Blanket SMS) | 3,000 | 60.00 | 1,500.00 BDT | **+20,100.00 BDT** |
+| | Unrouted Model | 1,875 | 135.30 | 26,695.00 BDT | +22,013.00 BDT |
+| | **WhyQuiet Routed Strategy** | **2,527** | **125.60** | **16,216.50 BDT** | **+28,999.50 BDT** |
+| | Oracle (Upper Bound) | 1,875 | 150.00 | 26,695.00 BDT | +27,305.00 BDT |
+
+*\*At 1% recovery, blanket SMS also credits completed-lifecycle (`solved_problem`) wallets; like-for-like on actionable wallets, routed matches blanket.*
 
 ### 7.3 Economic Takeaways
-- At low recovery rates (1%), the cheap rule baseline preserves positive return (+1,200 BDT) because high-touch remedies exceed incremental revenue.
-- At the 4% base case and 8% optimistic case, **targeted remedies recover 2.8&times; more users (84.4 vs 30.0 at 4%; 168.8 vs 60.0 at 8%)**, producing **+34,947 BDT net value** at 8% recovery.
-- WhyQuiet's refusal mechanism saved **$7,172\text{ BDT}$** in wasted spend by refusing 652 ambiguous wallets that would otherwise have incurred misallocated remedy costs.
+1. **Never worse than blanket SMS like-for-like**: Cause break-even thresholds range from 1.39% to 6.94%. Price-aware routing dynamically falls back to blanket SMS whenever expected remedy value is non-superior, preventing capital loss on expensive unvalidated remedies.
+2. **At 4% recovery, routed beats blanket by +8.9%** (+10,125.10 BDT vs. +9,300.00 BDT); **at 8% by +44.3%** (+28,999.50 BDT vs. +20,100.00 BDT) on Population B (simulation, ASSUMED inputs).
+3. **Upay Scale Projection** (ASSUMED: Upay cause mix = synthetic population B; base ~7M stale late 2022; Bangladesh Bank industry inactive share 63.57% as of Feb 2025 yielding 4,449,933 dormant wallets, 1.0x cost scale): central scenario routed net value is **+1.50M BDT at 1%** (matches blanket like-for-like), **+15.02M BDT at 4%** (+1.22M BDT advantage over blanket SMS), and **+43.02M BDT at 8%** (+13.20M BDT advantage over blanket SMS).
+4. **Refusal Waste Avoidance**: Calibrated refusal routes 652 ambiguous wallets to the cheap blanket message instead of a costly targeted remedy; avoided targeted spend = **9,170.00 BDT** (8,844.00 BDT net of blanket SMS; recomputed under per-cause costs).
+5. **Empirical Pilot Protocol**: Not yet measured in production; proposed 2-week pilot (`docs/PILOT_PROTOCOL.md`), $n=424$ wallets per arm (1,272 total across 3 arms) from `scripts/pilot_sample_size.py` at 4% benchmark, with pre-registered stop rule = per-cause break-even rate $r^* = \text{cost} / 360\text{ BDT}$.
 
 ---
 

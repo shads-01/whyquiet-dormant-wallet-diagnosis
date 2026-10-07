@@ -34,6 +34,45 @@ export type Wallet = {
   rule_baseline: { fired: boolean; action: "message_everyone" | "none" };
 };
 
+export type RefusalValidity = {
+  refusal_rate_blended: number;
+  refusal_rate_clean: number;
+  enrichment_ratio: number;
+  forced_error_refused: number;
+  forced_error_attributed: number;
+};
+
+export type PopulationC = {
+  macro_f1: number;
+  refusal_rate: number;
+  n_wallets: number;
+};
+
+export type PilotProtocol = {
+  alpha: number;
+  power: number;
+  n_per_arm: number;
+  n_arms: number;
+  total_wallets: number;
+  generic_factor: number;
+  benchmark_rate: number;
+};
+
+export type CalibrationBin = {
+  bin: number;
+  mean_confidence: number;
+  empirical_accuracy: number;
+  n: number;
+};
+
+export type PerCauseMetric = {
+  cause: Cause;
+  precision: number;
+  recall: number;
+  f1: number;
+  support: number;
+};
+
 export type Report = {
   ml: {
     macro_f1_a_test: number;
@@ -46,8 +85,14 @@ export type Report = {
     best_single_feature: string;
     best_single_feature_f1_b: number;
     rule_baseline_f1_b: number;
+    refusal_validity?: RefusalValidity;
+    verdict_flip_rate?: number;
   };
+  population_c?: PopulationC | null;
+  pilot?: PilotProtocol | null;
   confusion_b: { labels: Cause[]; matrix: number[][] }; // rows = true, cols = predicted (attributed only)
+  calibration_bins?: CalibrationBin[];
+  per_cause_f1_b?: PerCauseMetric[];
   fairness: {
     slice: "worker_type" | "pay_cycle";
     group: string;
@@ -56,16 +101,23 @@ export type Report = {
     refusal_rate: number;
   }[];
   money: MoneyRow[] | null; // null if src/rules.money not ready at export time
+  break_even?: Record<Cause, number | null> | null;
+  sweep?: MoneySweepRow[] | null;
+  routing_plan?: Record<string, Record<Cause, "targeted" | "blanket" | "none">> | null;
   assumptions: string[]; // every ASSUMED input, one line each
 };
 
 export type MoneyRow = {
   recovery_rate: 0.01 | 0.04 | 0.08;
-  strategy: "rule" | "model" | "oracle";
+  strategy: "rule" | "model" | "oracle" | "routed";
   wallets_actioned: number;
   users_recovered: number;
   cost_bdt: number;
   value_bdt: number; // users_recovered * ARPU * ramp - cost
+};
+
+export type MoneySweepRow = MoneyRow & {
+  cost_scale: number;
 };
 
 export type Remedy = {

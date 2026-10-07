@@ -1,6 +1,6 @@
 PY := uv run python
 
-.PHONY: dev check gen-types e2e demo deploy verify-deploy
+.PHONY: dev check gen-types e2e demo deploy verify-deploy ping
 
 dev:
 	uv run $(if $(wildcard .env),--env-file .env) uvicorn src.api.main:app --port 8008 &
@@ -31,3 +31,11 @@ deploy:
 
 verify-deploy:
 	uv run python scripts/verify_deploy.py $(URL) $(FLAGS)
+
+ping:
+	@U=$$(grep -E '^SUPABASE_URL=' .env 2>/dev/null | cut -d= -f2- | tr -d '\r'); \
+	K=$$(grep -E '^SUPABASE_SERVICE_ROLE_KEY=' .env 2>/dev/null | cut -d= -f2- | tr -d '\r'); \
+	if [ -z "$$U" ] || [ -z "$$K" ]; then echo "PAUSED (missing .env credentials)"; exit 1; fi; \
+	C=$$(curl -s -o /dev/null -w "%{http_code}" -H "apikey: $$K" "$$U/rest/v1/"); \
+	if [ "$$C" = "200" ]; then echo "OK ($$U)"; exit 0; else echo "PAUSED (HTTP $$C)"; exit 1; fi
+

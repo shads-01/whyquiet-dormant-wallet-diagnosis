@@ -20,6 +20,13 @@ if str(ROOT) not in sys.path:
 
 from datagen.generate import main as generate
 from scripts.evaluate import _split, report
+from scripts.pilot_sample_size import (
+    ALPHA,
+    GENERIC_FACTOR,
+    POWER,
+    calculate_sample_size_two_proportion,
+)
+from scripts.population_c import evaluate_population_c
 from src.model.train import ACCURACY_FLOOR, CAUSES, decide, predict, train
 from src.rules.baseline import rule_baseline
 from src.rules.remedies import REMEDIES
@@ -97,12 +104,38 @@ def export(seed: int, root: Path = ROOT, out: Path = ROOT / "web" / "public" / "
         })
 
     rep = report(seed, root)
-    n_correct = sum(c == t for c, t in zip(causes, truth))
+    pop_c = evaluate_population_c(seed, root)
+    n_per_arm_4pct = calculate_sample_size_two_proportion(0.04 * GENERIC_FACTOR, 0.04, ALPHA, POWER)
+    pilot_block = {
+        "alpha": ALPHA,
+        "power": POWER,
+        "n_per_arm": n_per_arm_4pct,
+        "n_arms": 3,
+        "total_wallets": n_per_arm_4pct * 3,
+        "generic_factor": GENERIC_FACTOR,
+        "benchmark_rate": 0.04,
+    }
+    per_cause = {
+        c: {
+            "correct": sum(1 for p, t in zip(causes, truth) if p == c and t == c),
+            "wrong": sum(1 for p, t in zip(causes, truth) if p == c and t != c),
+        }
+        for c in CAUSES
+    }
     try:
-        from src.rules.money import ASSUMPTIONS, money_table
-        money = money_table(len(truth), n_correct, len(truth) - n_refused - n_correct, n_refused)
+        from src.rules.money import (
+            ASSUMPTIONS,
+            break_even_rates,
+            money_sweep,
+            money_table,
+        )
+        from src.rules.routing import routing_plan
+        money = money_table(per_cause, n_refused, len(truth))
+        break_even = break_even_rates()
+        sweep = money_sweep(per_cause, n_refused, len(truth))
+        routing_plans = {str(rate): routing_plan(rate=rate) for rate in (0.01, 0.04, 0.08)}
     except ImportError:  # plan: carry on with money = null if the rules module is not ready
-        money, ASSUMPTIONS = None, []
+        money, break_even, sweep, routing_plans, ASSUMPTIONS = None, None, None, None, []
 
     bundle = _round({
         "meta": {
@@ -115,7 +148,16 @@ def export(seed: int, root: Path = ROOT, out: Path = ROOT / "web" / "public" / "
             "honesty_line": HONESTY_LINE,
         },
         "wallets": sample,
-        "report": {**rep, "money": money, "assumptions": ASSUMPTIONS + MODEL_ASSUMPTIONS},
+        "report": {
+            **rep,
+            "population_c": pop_c,
+            "pilot": pilot_block,
+            "money": money,
+            "break_even": break_even,
+            "sweep": sweep,
+            "routing_plan": routing_plans,
+            "assumptions": ASSUMPTIONS + MODEL_ASSUMPTIONS,
+        },
         "remedies": REMEDIES,
     })
     out.parent.mkdir(parents=True, exist_ok=True)
