@@ -8,6 +8,7 @@ Run: uv run python scripts/evaluate.py --seed 42
 import argparse
 import json
 import sys
+from collections.abc import Sequence
 from pathlib import Path
 
 import numpy as np
@@ -22,7 +23,7 @@ from src.model.features import features
 from src.model.train import CAUSES, decide, fit, predict, train
 
 
-def macro_f1(truth: list[str], pred: list[str | None]) -> float:
+def macro_f1(truth: Sequence[str], pred: Sequence[str | None]) -> float:
     kept = [(t, p) for t, p in zip(truth, pred) if p is not None]
     if not kept:
         return 0.0
